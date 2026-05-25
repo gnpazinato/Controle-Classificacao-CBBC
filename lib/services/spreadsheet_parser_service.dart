@@ -511,10 +511,9 @@ class SpreadsheetParserService {
     }
 
     // Classe é OPCIONAL na importação: se vier vazia ou inválida, o atleta
-    // entra com classe padrão 1.0 e a usuária ajusta manualmente na tela
-    // de resumo (dropdown por linha). Reportamos como warning pra ela
-    // saber quem precisa de atenção.
-    double playerClass = 1.0;
+    // entra com classe `null` e aparece na tela de validação com o campo
+    // destacado pra usuária preencher manualmente antes do jogo.
+    double? playerClass;
     if (classRaw.isEmpty) {
       issues.add(ImportIssue(
         category: ImportIssueCategory.missingPlayerClass,
@@ -536,7 +535,7 @@ class SpreadsheetParserService {
           category: ImportIssueCategory.invalidPlayerClass,
           severity: ImportIssueSeverity.warning,
           message:
-              'Classe "$classRaw" não reconhecida para $playerLabel — entrou como 1.0, ajuste manualmente. Aceitas: $accepted.',
+              'Classe "$classRaw" não reconhecida para $playerLabel — ajuste manualmente no app. Aceitas: $accepted.',
           sheetName: sheetName,
           rowNumber: rowNumber,
           clubName: clubName,

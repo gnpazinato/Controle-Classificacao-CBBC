@@ -374,11 +374,21 @@ class _EditablePlayerRowState extends State<_EditablePlayerRow> {
                   key: Key('class-dropdown-${widget.player.id}'),
                   value: widget.player.playerClass,
                   isDense: true,
-                  decoration: const InputDecoration(
+                  hint: const Text(
+                    '—',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  decoration: InputDecoration(
                     isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                    border: OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 8,
+                    ),
+                    border: const OutlineInputBorder(),
+                    fillColor: widget.player.playerClass == null
+                        ? CbbcColors.alertRedSurface
+                        : null,
+                    filled: widget.player.playerClass == null,
                   ),
                   items: kAcceptedPlayerClasses
                       .map((double v) => DropdownMenuItem<double>(

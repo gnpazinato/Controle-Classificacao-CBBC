@@ -635,7 +635,7 @@ class _PlayerCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  player.playerClass.toStringAsFixed(1),
+                  (player.playerClass?.toStringAsFixed(1) ?? '—'),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: fontSize,
@@ -883,7 +883,7 @@ class _CourtPlayerChip extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             Text(
-              player.playerClass.toStringAsFixed(1),
+              (player.playerClass?.toStringAsFixed(1) ?? '—'),
               style: TextStyle(color: fg, fontSize: fontSize, height: 1.0),
             ),
           ],

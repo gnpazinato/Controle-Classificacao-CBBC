@@ -67,6 +67,42 @@ void main() {
   });
 
   group('SpreadsheetParserService — formato seccionado CBBC', () {
+    test('atleta sem classe entra com playerClass null (aviso, não bloqueia)', () {
+      final SheetData sheet = SheetData(
+        name: 'Planilha1',
+        rows: <List<String?>>[
+          <String?>[null, null, null, 'APP', null],
+          <String?>[null, 'CLASSE', 'NASCIMENTO', 'ATLETA', 'Nº'],
+          <String?>[null, '4.0', '01/10/1995', 'ADRIENNE OLIVEIRA', '11'],
+          <String?>[null, null, '02/06/1992', 'SEM CLASSE PRA TESTE', '8'],
+        ],
+      );
+
+      const SpreadsheetParserService parser = SpreadsheetParserService();
+      final ImportResult result = parser.parseSheets(<SheetData>[sheet]);
+
+      expect(result.hasBlockingIssues, isFalse,
+          reason: result.issues.map((ImportIssue i) => i.message).join('\n'));
+      expect(result.teams, hasLength(1));
+      expect(result.teams.first.players, hasLength(2));
+
+      final Player adrienne = result.teams.first.players
+          .firstWhere((Player p) => p.shirtNumber == 11);
+      final Player semClasse = result.teams.first.players
+          .firstWhere((Player p) => p.shirtNumber == 8);
+      expect(adrienne.playerClass, 4.0);
+      expect(semClasse.playerClass, isNull);
+      expect(semClasse.hasValidClass, isFalse);
+
+      // O aviso (warning, não error) precisa aparecer pra usuária ver.
+      final List<ImportIssue> warnings = result.issues
+          .where((ImportIssue i) =>
+              i.severity == ImportIssueSeverity.warning &&
+              i.category == ImportIssueCategory.missingPlayerClass)
+          .toList();
+      expect(warnings, hasLength(1));
+    });
+
     test('uma aba com blocos por clube, sem coluna de gênero', () {
       // Reproduz o layout da planilha "RELAÇÃO DE ATLETAS" da CBBC.
       final SheetData sheet = SheetData(

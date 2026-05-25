@@ -236,7 +236,9 @@ class MatchState {
   double _sumClasses(List<Player> players) {
     double total = 0;
     for (final Player p in players) {
-      total += p.playerClass;
+      // Atletas sem classe contam como 0 — usuária precisa preencher
+      // manualmente antes do jogo pra somar de verdade.
+      total += p.playerClass ?? 0.0;
     }
     return total;
   }

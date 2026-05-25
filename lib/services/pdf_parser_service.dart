@@ -187,28 +187,30 @@ class PdfParserService {
       if (classRaw.isEmpty) {
         issues.add(ImportIssue(
           category: ImportIssueCategory.missingPlayerClass,
-          severity: ImportIssueSeverity.error,
-          message: 'Atleta sem classe funcional.',
+          severity: ImportIssueSeverity.warning,
+          message:
+              'Classe funcional não informada para $playerLabel — preencha manualmente no app.',
           rowNumber: i + 1,
           clubName: clubName,
           playerLabel: playerLabel,
           sheetName: 'PDF página $pageNumber',
         ));
-        valid = false;
       } else {
         playerClass = parsePlayerClass(classRaw);
         if (playerClass == null) {
+          final String accepted = kAcceptedPlayerClasses
+              .map((double c) => c.toStringAsFixed(1))
+              .join(', ');
           issues.add(ImportIssue(
             category: ImportIssueCategory.invalidPlayerClass,
-            severity: ImportIssueSeverity.error,
+            severity: ImportIssueSeverity.warning,
             message:
-                'Classe inválida para $playerLabel — aceitas: ${kAcceptedPlayerClasses.join(", ")}.',
+                'Classe "$classRaw" não reconhecida para $playerLabel — ajuste manualmente no app. Aceitas: $accepted.',
             rowNumber: i + 1,
             clubName: clubName,
             playerLabel: playerLabel,
             sheetName: 'PDF página $pageNumber',
           ));
-          valid = false;
         }
       }
 
@@ -246,7 +248,7 @@ class PdfParserService {
         clubName: clubName,
         shirtNumber: shirtNumber,
         fullName: name,
-        playerClass: playerClass!,
+        playerClass: playerClass,
         dateOfBirth: dob,
         gender: _genderFromString(genderRaw),
       ));

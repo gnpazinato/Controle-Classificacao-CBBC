@@ -44,13 +44,18 @@ class Player {
     required this.playerClass,
     this.dateOfBirth,
     this.gender = PlayerGender.unspecified,
-  }) : assert(playerClass > 0, 'playerClass deve ser positivo');
+  }) : assert(playerClass == null || playerClass > 0,
+            'playerClass deve ser positivo se informado');
 
   final String id;
   final String clubName;
   final int shirtNumber;
   final String fullName;
-  final double playerClass;
+
+  /// Classe funcional (1.0 a 4.5). `null` quando o atleta veio sem
+  /// classe da planilha/PDF — a usuária precisa preencher manualmente
+  /// na tela de validação antes do jogo.
+  final double? playerClass;
   final DateTime? dateOfBirth;
   final PlayerGender gender;
 
@@ -67,7 +72,10 @@ class Player {
     return parts.last;
   }
 
-  bool get hasValidClass => isAcceptedPlayerClass(playerClass);
+  bool get hasValidClass {
+    final double? c = playerClass;
+    return c != null && isAcceptedPlayerClass(c);
+  }
 
   /// Idade em anos completos relativa a [reference]. `null` se DOB nulo.
   int? ageAt(DateTime reference) {
@@ -131,7 +139,7 @@ class Player {
           (json['teamName'] as String? ?? ''),
       shirtNumber: json['shirtNumber'] as int,
       fullName: (json['fullName'] as String?) ?? '',
-      playerClass: (json['playerClass'] as num).toDouble(),
+      playerClass: (json['playerClass'] as num?)?.toDouble(),
       dateOfBirth: (json['dateOfBirth'] as String?) == null
           ? null
           : DateTime.parse(json['dateOfBirth'] as String),
