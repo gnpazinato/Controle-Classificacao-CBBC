@@ -18,11 +18,15 @@ class SheetData {
 
 /// Parser de planilhas `.xlsx` no formato CBBC.
 ///
-/// Aceita dois layouts:
+/// Aceita três layouts:
 /// - **Aba única "Atletas"**: cabeçalho com `clube`, `classe`, `atleta`,
 ///   `camisa`, `data de nascimento`, `genero`. Uma linha por atleta.
 /// - **Uma aba por clube**: nome da aba = nome do clube. Cabeçalho sem
 ///   coluna `clube`.
+/// - **Seções por clube** (uma aba só): cada bloco começa com uma linha
+///   contendo só o nome do clube, seguida do cabeçalho da seção
+///   (`classe`, `nascimento`, `atleta`, `Nº`). A coluna `gênero` é
+///   opcional. Útil para a planilha "RELAÇÃO DE ATLETAS" da CBBC.
 class SpreadsheetParserService {
   const SpreadsheetParserService();
 
@@ -81,6 +85,17 @@ class SpreadsheetParserService {
     if (singleSheet != null) {
       return _parseSingleSheet(singleSheet);
     }
+
+    // Se alguma aba parece estar em formato "seções por clube" (várias
+    // linhas de cabeçalho separadas por linhas-título), tenta esse parser
+    // antes de cair no multi-sheet tradicional.
+    final List<SheetData> sectioned = nonEmpty
+        .where(_looksSectionedSheet)
+        .toList();
+    if (sectioned.isNotEmpty) {
+      return _parseSectionedSheets(sectioned, nonEmpty);
+    }
+
     return _parseMultiSheet(nonEmpty);
   }
 
@@ -242,6 +257,205 @@ class SpreadsheetParserService {
       issues: issues,
       competitionName: competitionName,
     );
+  }
+
+  // -------- modo "seções por clube" (uma aba, vários blocos) --------
+
+  static const int _kMinFieldsForHeaderRow = 2;
+
+  bool _looksSectionedSheet(SheetData sheet) {
+    int headerRows = 0;
+    bool sawClubColumn = false;
+    for (final List<String?> row in sheet.rows) {
+      final int fields = _countCanonicalFields(row);
+      if (fields >= _kMinFieldsForHeaderRow) {
+        headerRows++;
+        if (_rowHasField(row, 'club')) sawClubColumn = true;
+      }
+    }
+    // Precisa de pelo menos 2 cabeçalhos repetidos E nenhum deles trazer
+    // a coluna `clube` (porque aí o clube vem da linha-título do bloco).
+    return headerRows >= 2 && !sawClubColumn;
+  }
+
+  ImportResult _parseSectionedSheets(
+    List<SheetData> sectionedSheets,
+    List<SheetData> allSheets,
+  ) {
+    final List<ImportIssue> issues = <ImportIssue>[];
+    final Map<String, _ClubBucket> buckets = <String, _ClubBucket>{};
+    String? competitionName;
+    final Set<String> sectionedNames = sectionedSheets
+        .map((SheetData s) => s.name)
+        .toSet();
+
+    for (final SheetData sheet in sectionedSheets) {
+      _parseOneSectionedSheet(
+        sheet: sheet,
+        buckets: buckets,
+        issues: issues,
+        onCompetitionName: (String name) => competitionName ??= name,
+      );
+    }
+
+    // Abas restantes que não estão em modo seccionado seguem o fluxo
+    // tradicional "uma aba = um clube".
+    final List<SheetData> remaining = allSheets
+        .where((SheetData s) => !sectionedNames.contains(s.name))
+        .toList();
+    if (remaining.isNotEmpty) {
+      final ImportResult multi = _parseMultiSheet(remaining);
+      for (final Team t in multi.teams) {
+        final _ClubBucket bucket = buckets.putIfAbsent(
+          t.id,
+          () => _ClubBucket(id: t.id, name: t.clubName),
+        );
+        bucket.players.addAll(t.players);
+      }
+      issues.addAll(multi.issues);
+      competitionName ??= multi.competitionName;
+    }
+
+    final List<Team> teams = buckets.values
+        .map((_ClubBucket b) =>
+            Team(id: b.id, clubName: b.name, players: b.players))
+        .toList();
+
+    _detectDuplicateShirtNumbers(teams, issues, null);
+
+    if (teams.isEmpty && issues.where((ImportIssue i) => i.isBlocking).isEmpty) {
+      issues.add(const ImportIssue(
+        category: ImportIssueCategory.missingRequiredColumn,
+        severity: ImportIssueSeverity.error,
+        message: 'Não foi possível identificar atletas na planilha.',
+      ));
+    }
+
+    return ImportResult(
+      teams: teams,
+      issues: issues,
+      competitionName: competitionName,
+    );
+  }
+
+  void _parseOneSectionedSheet({
+    required SheetData sheet,
+    required Map<String, _ClubBucket> buckets,
+    required List<ImportIssue> issues,
+    required void Function(String) onCompetitionName,
+  }) {
+    String? pendingTitle;
+    String? currentClub;
+    _HeaderInfo? currentHeader;
+
+    for (int i = 0; i < sheet.rows.length; i++) {
+      final List<String?> row = sheet.rows[i];
+      if (!_rowHasContent(row)) {
+        pendingTitle = null;
+        continue;
+      }
+
+      // Cabeçalho de seção?
+      final Map<String, int>? headerMap = _readHeaderMap(row);
+      if (headerMap != null) {
+        currentHeader = _HeaderInfo(fieldIndex: headerMap, firstDataRow: i + 1);
+        if (pendingTitle != null) {
+          currentClub = pendingTitle;
+          pendingTitle = null;
+        }
+        continue;
+      }
+
+      // Linha-título (uma só célula com texto, não-canônica)?
+      final String? title = _detectSectionTitle(row);
+      if (title != null) {
+        pendingTitle = title;
+        continue;
+      }
+
+      // Linha de dados — exige header + clube vigentes.
+      if (currentHeader == null) continue;
+      if (currentClub == null) {
+        // Sem título acima — pula silenciosamente (linhas de rodapé, etc).
+        continue;
+      }
+
+      final String clubName = currentClub!;
+      final String? maybeCompetition =
+          _readOptionalString(row, currentHeader!.fieldIndex['competition']);
+      if (maybeCompetition != null) onCompetitionName(maybeCompetition);
+
+      final String clubId = clubIdFromName(clubName);
+      final _ClubBucket bucket = buckets.putIfAbsent(
+        clubId,
+        () => _ClubBucket(id: clubId, name: clubName),
+      );
+      final Player? player = _buildPlayer(
+        row: row,
+        header: currentHeader!,
+        sheetName: sheet.name,
+        rowNumber: i + 1,
+        clubId: clubId,
+        clubName: clubName,
+        issues: issues,
+      );
+      if (player != null) bucket.players.add(player);
+    }
+  }
+
+  /// Cabeçalho de seção precisa ter pelo menos 2 campos canônicos E
+  /// cobrir as colunas essenciais (`class`, `name`, `shirt`).
+  Map<String, int>? _readHeaderMap(List<String?> row) {
+    final Map<String, int> map = <String, int>{};
+    for (int c = 0; c < row.length; c++) {
+      final String? raw = row[c];
+      if (raw == null) continue;
+      final String? field = canonicalField(raw);
+      if (field == null) continue;
+      map.putIfAbsent(field, () => c);
+    }
+    if (map.length < _kMinFieldsForHeaderRow) return null;
+    if (!map.containsKey('class')) return null;
+    if (!map.containsKey('name')) return null;
+    if (!map.containsKey('shirt')) return null;
+    return map;
+  }
+
+  String? _detectSectionTitle(List<String?> row) {
+    String? title;
+    for (final String? cell in row) {
+      if (cell == null) continue;
+      final String trimmed = cell.trim();
+      if (trimmed.isEmpty) continue;
+      if (title != null) return null; // mais de uma célula com texto
+      title = trimmed;
+    }
+    if (title == null) return null;
+    if (canonicalField(title) != null) return null;
+    // Evita pegar o título do arquivo ("RELAÇÃO DE ATLETAS") como clube.
+    final String upper = title.toUpperCase();
+    if (upper.startsWith('RELA') && upper.contains('ATLETA')) return null;
+    if (upper == 'ATLETAS' || upper == 'JOGADORES' || upper == 'PLAYERS') {
+      return null;
+    }
+    return title;
+  }
+
+  int _countCanonicalFields(List<String?> row) {
+    int count = 0;
+    for (final String? cell in row) {
+      if (cell == null) continue;
+      if (canonicalField(cell) != null) count++;
+    }
+    return count;
+  }
+
+  bool _rowHasField(List<String?> row, String field) {
+    for (final String? cell in row) {
+      if (cell == null) continue;
+      if (canonicalField(cell) == field) return true;
+    }
+    return false;
   }
 
   // -------- helpers --------

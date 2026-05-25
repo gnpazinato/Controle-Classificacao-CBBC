@@ -2,6 +2,8 @@ import 'package:controle_classificacao_cbbc/main.dart';
 import 'package:controle_classificacao_cbbc/models/match_state.dart';
 import 'package:controle_classificacao_cbbc/models/player.dart';
 import 'package:controle_classificacao_cbbc/models/team.dart';
+import 'package:controle_classificacao_cbbc/services/spreadsheet_parser_service.dart';
+import 'package:controle_classificacao_cbbc/services/import_result.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,6 +62,49 @@ void main() {
       final Player young = makePlayer(
           shirt: 6, cls: 4.5, dob: DateTime.utc(2012, 1, 1), gender: PlayerGender.female);
       expect(rules.qualifies(young, ref), isFalse);
+    });
+  });
+
+  group('SpreadsheetParserService — formato seccionado CBBC', () {
+    test('uma aba com blocos por clube, sem coluna de gênero', () {
+      // Reproduz o layout da planilha "RELAÇÃO DE ATLETAS" da CBBC.
+      final SheetData sheet = SheetData(
+        name: 'RELAÇÃO DE ATLETAS',
+        rows: <List<String?>>[
+          <String?>[null, null, null, 'RELAÇÃO DE ATLETAS', null],
+          <String?>[null, null, null, null, null],
+          <String?>[null, null, null, 'APP', null],
+          <String?>[null, 'CLASSE', 'NASCIMENTO', 'ATLETA', 'Nº'],
+          <String?>[null, '1.5', '21/08/2000', 'STEPHANIA SILVA JACINTO', '7'],
+          <String?>[null, '4.0', '01/10/1995', 'ADRIENNE OLIVEIRA DE SOUZA', '11'],
+          <String?>[null, '1.0', '16/01/1987', 'CRISTIANE MEDINA RIBAS', '17'],
+          <String?>[null, null, null, null, null],
+          <String?>[null, null, null, 'ALL STAR RODAS PARÁ', null],
+          <String?>[null, 'CLASSE', 'NASCIMENTO', 'ATLETA', 'Nº'],
+          <String?>[null, '2.0', '26/09/1976', 'CLEONETE DE NAZARÉ SANTOS REIS', '4'],
+          <String?>[null, '1.5', '15/06/1997', 'GRAZIELE GONCALVES DA SILVA', '5'],
+        ],
+      );
+
+      const SpreadsheetParserService parser = SpreadsheetParserService();
+      final ImportResult result = parser.parseSheets(<SheetData>[sheet]);
+
+      expect(result.hasBlockingIssues, isFalse,
+          reason: result.issues.map((ImportIssue i) => i.message).join('\n'));
+      expect(result.teams, hasLength(2));
+
+      final Team app = result.teams.firstWhere((Team t) => t.clubName == 'APP');
+      final Team rodas = result.teams
+          .firstWhere((Team t) => t.clubName == 'ALL STAR RODAS PARÁ');
+      expect(app.players, hasLength(3));
+      expect(rodas.players, hasLength(2));
+
+      final Player stephania =
+          app.players.firstWhere((Player p) => p.shirtNumber == 7);
+      expect(stephania.fullName, 'STEPHANIA SILVA JACINTO');
+      expect(stephania.playerClass, 1.5);
+      expect(stephania.dateOfBirth, DateTime.utc(2000, 8, 21));
+      expect(stephania.gender, PlayerGender.unspecified);
     });
   });
 
