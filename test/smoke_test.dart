@@ -68,6 +68,7 @@ void main() {
 
   group('SpreadsheetParserService — formato seccionado CBBC', () {
     test('atleta sem classe entra com playerClass null (aviso, não bloqueia)', () {
+      // Dois blocos pra ativar o modo seccionado.
       final SheetData sheet = SheetData(
         name: 'Planilha1',
         rows: <List<String?>>[
@@ -75,6 +76,10 @@ void main() {
           <String?>[null, 'CLASSE', 'NASCIMENTO', 'ATLETA', 'Nº'],
           <String?>[null, '4.0', '01/10/1995', 'ADRIENNE OLIVEIRA', '11'],
           <String?>[null, null, '02/06/1992', 'SEM CLASSE PRA TESTE', '8'],
+          <String?>[null, null, null, null, null],
+          <String?>[null, null, null, 'OUTRO CLUBE', null],
+          <String?>[null, 'CLASSE', 'NASCIMENTO', 'ATLETA', 'Nº'],
+          <String?>[null, '2.0', '15/03/1990', 'OUTRA ATLETA', '3'],
         ],
       );
 
@@ -83,13 +88,15 @@ void main() {
 
       expect(result.hasBlockingIssues, isFalse,
           reason: result.issues.map((ImportIssue i) => i.message).join('\n'));
-      expect(result.teams, hasLength(1));
-      expect(result.teams.first.players, hasLength(2));
 
-      final Player adrienne = result.teams.first.players
-          .firstWhere((Player p) => p.shirtNumber == 11);
-      final Player semClasse = result.teams.first.players
-          .firstWhere((Player p) => p.shirtNumber == 8);
+      final Team app =
+          result.teams.firstWhere((Team t) => t.clubName == 'APP');
+      expect(app.players, hasLength(2));
+
+      final Player adrienne =
+          app.players.firstWhere((Player p) => p.shirtNumber == 11);
+      final Player semClasse =
+          app.players.firstWhere((Player p) => p.shirtNumber == 8);
       expect(adrienne.playerClass, 4.0);
       expect(semClasse.playerClass, isNull);
       expect(semClasse.hasValidClass, isFalse);
