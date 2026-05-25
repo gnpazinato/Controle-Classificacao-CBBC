@@ -75,9 +75,10 @@ ThemeData buildCbbcTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
+      toolbarHeight: 80,
       titleTextStyle: TextStyle(
         color: Colors.white,
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
       ),
       iconTheme: IconThemeData(color: Colors.white),

@@ -62,7 +62,9 @@ class CbbcBrandHeader extends StatelessWidget {
   }
 }
 
-/// Título compacto para `AppBar`.
+/// Título empilhado (logo branco em cima, texto da tela embaixo) usado nas
+/// `AppBar`s azuis das telas internas. O logo é tintado de branco via
+/// `ColorFilter` pra ficar legível sobre o fundo azul cobalto.
 class CbbcAppBarTitle extends StatelessWidget {
   const CbbcAppBarTitle({super.key, required this.text});
 
@@ -70,25 +72,30 @@ class CbbcAppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         SizedBox(
           key: const Key('cbbc-appbar-logo'),
-          height: 28,
-          child: Image.asset(
-            kCbbcLogoAsset,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            semanticLabel: 'Logo CBBC',
+          height: 38,
+          child: ColorFiltered(
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+            child: Image.asset(
+              kCbbcLogoAsset,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              semanticLabel: 'Logo CBBC',
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            text,
-            overflow: TextOverflow.ellipsis,
-          ),
+        const SizedBox(height: 2),
+        Text(
+          text,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
