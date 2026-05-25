@@ -190,7 +190,7 @@ class _TeamDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<Team>(
-      initialValue: value,
+      value: value,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
@@ -225,7 +225,7 @@ class _PointLimitDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<double>(
       key: const Key('point-limit-dropdown'),
-      initialValue: value,
+      value: value,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: 'Pontuação máxima por equipe',

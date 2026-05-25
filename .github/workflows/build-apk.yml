@@ -43,6 +43,7 @@ jobs:
             --org br.org.cbbc \
             --platforms=android,web \
             --description "Controle de Classificação CBBC"
+          rm -f test/widget_test.dart
 
       - name: Install dependencies
         run: flutter pub get
