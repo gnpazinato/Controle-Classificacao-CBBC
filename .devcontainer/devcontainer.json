@@ -7,7 +7,7 @@
     }
   },
   "containerEnv": {
-    "FLUTTER_VERSION": "3.24.5",
+    "FLUTTER_VERSION": "3.32.0",
     "FLUTTER_HOME": "/home/vscode/flutter",
     "PATH": "/home/vscode/flutter/bin:/home/vscode/flutter/bin/cache/dart-sdk/bin:${containerEnv:PATH}"
   },
