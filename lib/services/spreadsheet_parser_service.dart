@@ -380,9 +380,9 @@ class SpreadsheetParserService {
         continue;
       }
 
-      final String clubName = currentClub!;
+      final String clubName = currentClub;
       final String? maybeCompetition =
-          _readOptionalString(row, currentHeader!.fieldIndex['competition']);
+          _readOptionalString(row, currentHeader.fieldIndex['competition']);
       if (maybeCompetition != null) onCompetitionName(maybeCompetition);
 
       final String clubId = clubIdFromName(clubName);
@@ -392,7 +392,7 @@ class SpreadsheetParserService {
       );
       final Player? player = _buildPlayer(
         row: row,
-        header: currentHeader!,
+        header: currentHeader,
         sheetName: sheet.name,
         rowNumber: i + 1,
         clubId: clubId,
