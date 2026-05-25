@@ -1,3 +1,4 @@
+import 'package:controle_classificacao_cbbc/constants/player_classes.dart';
 import 'package:controle_classificacao_cbbc/main.dart';
 import 'package:controle_classificacao_cbbc/models/match_state.dart';
 import 'package:controle_classificacao_cbbc/models/player.dart';
@@ -105,6 +106,30 @@ void main() {
       expect(stephania.playerClass, 1.5);
       expect(stephania.dateOfBirth, DateTime.utc(2000, 8, 21));
       expect(stephania.gender, PlayerGender.unspecified);
+    });
+  });
+
+  group('parsePlayerClass — tolerância a lixo de planilha', () {
+    test('formatos simples', () {
+      expect(parsePlayerClass('1.5'), 1.5);
+      expect(parsePlayerClass('1,5'), 1.5);
+      expect(parsePlayerClass('4'), 4.0);
+      expect(parsePlayerClass('4.0'), 4.0);
+    });
+    test('NBSP e espaços invisíveis em volta', () {
+      expect(parsePlayerClass(' 1.5 '), 1.5);
+      expect(parsePlayerClass(' 2.5 '), 2.5);
+      expect(parsePlayerClass('​3.5'), 3.5); // zero-width space
+    });
+    test('variantes Unicode de vírgula/ponto', () {
+      expect(parsePlayerClass('1٫5'), 1.5); // árabe
+      expect(parsePlayerClass('2．5'), 2.5); // fullwidth full stop
+    });
+    test('valor inválido rejeitado', () {
+      expect(parsePlayerClass('5.5'), isNull);
+      expect(parsePlayerClass('abc'), isNull);
+      expect(parsePlayerClass(''), isNull);
+      expect(parsePlayerClass('1.5.0'), isNull);
     });
   });
 

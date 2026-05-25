@@ -24,11 +24,28 @@ bool isAcceptedPlayerClass(double value) {
 }
 
 /// Converte representação textual (`"2.5"` ou `"2,5"`) para [double].
+///
+/// Tolera lixo de formatação de planilha — caracteres invisíveis (NBSP,
+/// zero-width), variantes Unicode de vírgula/ponto, fragmentos de XML de
+/// rich-text — desde que sobre algo numérico parseável.
 double? parsePlayerClass(String? raw) {
   if (raw == null) return null;
   final String trimmed = raw.trim();
   if (trimmed.isEmpty) return null;
-  final String normalized = trimmed.replaceAll(',', '.');
+  // 1) Vírgulas (e variantes) viram ponto.
+  String normalized = trimmed
+      .replaceAll(',', '.')
+      .replaceAll('٫', '.') // árabe decimal
+      .replaceAll('‚', '.'); // single low-9 quotation mark
+  // 2) Variantes Unicode de ponto viram ponto comum.
+  normalized = normalized
+      .replaceAll('․', '.') // one dot leader
+      .replaceAll('．', '.'); // fullwidth full stop
+  // 3) Mantém só dígitos e pontos.
+  normalized = normalized.replaceAll(RegExp(r'[^0-9.]'), '');
+  if (normalized.isEmpty) return null;
+  // 4) Mais de um ponto = formato inválido.
+  if (RegExp(r'\.').allMatches(normalized).length > 1) return null;
   final double? parsed = double.tryParse(normalized);
   if (parsed == null) return null;
   if (!isAcceptedPlayerClass(parsed)) return null;

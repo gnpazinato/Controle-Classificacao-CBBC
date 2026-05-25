@@ -525,11 +525,14 @@ class SpreadsheetParserService {
     } else {
       playerClass = parsePlayerClass(classRaw);
       if (playerClass == null) {
+        final String accepted = kAcceptedPlayerClasses
+            .map((double c) => c.toStringAsFixed(1))
+            .join(', ');
         issues.add(ImportIssue(
           category: ImportIssueCategory.invalidPlayerClass,
           severity: ImportIssueSeverity.error,
           message:
-              'Classe inválida para $playerLabel — aceitas: ${kAcceptedPlayerClasses.join(", ")}.',
+              'Classe "$classRaw" inválida para $playerLabel — aceitas: $accepted.',
           sheetName: sheetName,
           rowNumber: rowNumber,
           clubName: clubName,
@@ -710,14 +713,51 @@ class SpreadsheetParserService {
       if (inner is DateTime) {
         return _formatYmd(inner.year, inner.month, inner.day);
       }
-      try {
-        final dynamic maybeText = (inner as dynamic).text;
-        if (maybeText is String) return maybeText;
-      } catch (_) {}
+      // CellText (rich text) — tenta múltiplas estratégias de extração.
+      final String? rich = _extractRichText(inner);
+      if (rich != null) return rich;
       return inner.toString();
     } catch (_) {
       return value.toString();
     }
+  }
+
+  /// Tenta extrair texto plano de um objeto que pode ser `CellText`,
+  /// uma lista de spans, ou outra estrutura de rich-text do pacote
+  /// `excel`. Usa reflexão dinâmica pra não acoplar à API específica.
+  String? _extractRichText(dynamic obj) {
+    // .text direto
+    try {
+      final dynamic text = (obj as dynamic).text;
+      if (text is String && text.isNotEmpty) return text;
+    } catch (_) {}
+    // .value (recursivo)
+    try {
+      final dynamic nested = (obj as dynamic).value;
+      if (nested is String) return nested;
+      if (nested != null && nested != obj) {
+        final String? deeper = _extractRichText(nested);
+        if (deeper != null) return deeper;
+      }
+    } catch (_) {}
+    // .spans — concatena cada span
+    try {
+      final dynamic spans = (obj as dynamic).spans;
+      if (spans is Iterable) {
+        final StringBuffer buf = StringBuffer();
+        for (final dynamic span in spans) {
+          try {
+            final dynamic spanText = (span as dynamic).text;
+            if (spanText is String) buf.write(spanText);
+          } catch (_) {
+            buf.write(span.toString());
+          }
+        }
+        final String out = buf.toString();
+        if (out.isNotEmpty) return out;
+      }
+    } catch (_) {}
+    return null;
   }
 
   String _formatYmd(int year, int month, int day) =>
