@@ -25,13 +25,21 @@ bool isAcceptedPlayerClass(double value) {
 
 /// Converte representação textual (`"2.5"` ou `"2,5"`) para [double].
 ///
-/// Tolera lixo de formatação de planilha — caracteres invisíveis (NBSP,
-/// zero-width), variantes Unicode de vírgula/ponto, fragmentos de XML de
-/// rich-text — desde que sobre algo numérico parseável.
+/// Tolera:
+/// - lixo de formatação (NBSP, zero-width, variantes Unicode de
+///   vírgula/ponto, fragmentos de rich-text);
+/// - classes "meias" que o Excel/LibreOffice converteu acidentalmente em
+///   data (ex: usuário digitou `1.5`, o Excel interpretou como `1/5` =
+///   1º de maio e gravou `2026-05-01`).
 double? parsePlayerClass(String? raw) {
   if (raw == null) return null;
   final String trimmed = raw.trim();
   if (trimmed.isEmpty) return null;
+
+  // 0) Caso Excel: a célula virou data. Tenta recuperar "dia.mês".
+  final double? fromDate = _classFromDateLikeString(trimmed);
+  if (fromDate != null) return fromDate;
+
   // 1) Vírgulas (e variantes) viram ponto.
   String normalized = trimmed
       .replaceAll(',', '.')
@@ -50,4 +58,38 @@ double? parsePlayerClass(String? raw) {
   if (parsed == null) return null;
   if (!isAcceptedPlayerClass(parsed)) return null;
   return parsed;
+}
+
+/// Se [raw] for uma data (ISO `YYYY-MM-DD` ou br `DD/MM/YYYY`), tenta
+/// reconstruir a classe que o usuário tentou digitar. Por exemplo:
+/// `1.5` digitado pelo usuário vira `2026-05-01` quando o Excel converte
+/// para data; recuperamos `1.5` (dia=1, mês=5).
+double? _classFromDateLikeString(String raw) {
+  int? day;
+  int? month;
+
+  final RegExpMatch? iso =
+      RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(raw);
+  if (iso != null) {
+    month = int.tryParse(iso.group(2)!);
+    day = int.tryParse(iso.group(3)!);
+  } else {
+    final RegExpMatch? br =
+        RegExp(r'^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$').firstMatch(raw);
+    if (br != null) {
+      day = int.tryParse(br.group(1)!);
+      month = int.tryParse(br.group(2)!);
+    }
+  }
+
+  if (day == null || month == null) return null;
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+
+  // Excel grava "1.5" → 1º de maio → day=1, month=5. Reconstrói day.month.
+  final double dotMonth = day + month / 10.0;
+  if (isAcceptedPlayerClass(dotMonth)) return dotMonth;
+  // Fallback: caso a ordem tenha sido invertida em outro locale.
+  final double monthDot = month + day / 10.0;
+  if (isAcceptedPlayerClass(monthDot)) return monthDot;
+  return null;
 }

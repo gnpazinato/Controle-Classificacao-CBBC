@@ -510,35 +510,40 @@ class SpreadsheetParserService {
       valid = false;
     }
 
-    double? playerClass;
+    // Classe é OPCIONAL na importação: se vier vazia ou inválida, o atleta
+    // entra com classe padrão 1.0 e a usuária ajusta manualmente na tela
+    // de resumo (dropdown por linha). Reportamos como warning pra ela
+    // saber quem precisa de atenção.
+    double playerClass = 1.0;
     if (classRaw.isEmpty) {
       issues.add(ImportIssue(
         category: ImportIssueCategory.missingPlayerClass,
-        severity: ImportIssueSeverity.error,
-        message: 'Atleta sem classe funcional.',
+        severity: ImportIssueSeverity.warning,
+        message:
+            'Classe funcional não informada para $playerLabel — preencha manualmente no app.',
         sheetName: sheetName,
         rowNumber: rowNumber,
         clubName: clubName,
         playerLabel: playerLabel,
       ));
-      valid = false;
     } else {
-      playerClass = parsePlayerClass(classRaw);
-      if (playerClass == null) {
+      final double? parsed = parsePlayerClass(classRaw);
+      if (parsed == null) {
         final String accepted = kAcceptedPlayerClasses
             .map((double c) => c.toStringAsFixed(1))
             .join(', ');
         issues.add(ImportIssue(
           category: ImportIssueCategory.invalidPlayerClass,
-          severity: ImportIssueSeverity.error,
+          severity: ImportIssueSeverity.warning,
           message:
-              'Classe "$classRaw" inválida para $playerLabel — aceitas: $accepted.',
+              'Classe "$classRaw" não reconhecida para $playerLabel — entrou como 1.0, ajuste manualmente. Aceitas: $accepted.',
           sheetName: sheetName,
           rowNumber: rowNumber,
           clubName: clubName,
           playerLabel: playerLabel,
         ));
-        valid = false;
+      } else {
+        playerClass = parsed;
       }
     }
 
@@ -563,7 +568,7 @@ class SpreadsheetParserService {
       clubName: clubName,
       shirtNumber: shirtNumber,
       fullName: name,
-      playerClass: playerClass!,
+      playerClass: playerClass,
       dateOfBirth: dob,
       gender: _genderFromString(genderRaw),
     );

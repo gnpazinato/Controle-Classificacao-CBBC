@@ -131,6 +131,21 @@ void main() {
       expect(parsePlayerClass(''), isNull);
       expect(parsePlayerClass('1.5.0'), isNull);
     });
+    test('classe meia que o Excel virou data (ISO yyyy-MM-dd)', () {
+      // "1.5" digitado pelo usuário, Excel converteu pra 1º/5 → 2026-05-01
+      expect(parsePlayerClass('2026-05-01'), 1.5);
+      expect(parsePlayerClass('2026-05-02'), 2.5);
+      expect(parsePlayerClass('2026-05-03'), 3.5);
+      expect(parsePlayerClass('2026-05-04'), 4.5);
+    });
+    test('classe meia em formato BR DD/MM/YYYY', () {
+      expect(parsePlayerClass('01/05/2026'), 1.5);
+      expect(parsePlayerClass('04/05/2026'), 4.5);
+    });
+    test('data real que não bate com classe não é confundida', () {
+      // 15 de maio de 1990 = 15.5 → não é classe válida → retorna null
+      expect(parsePlayerClass('1990-05-15'), isNull);
+    });
   });
 
   group('MatchState.effectiveLimit', () {
