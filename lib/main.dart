@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'screens/load_spreadsheet_screen.dart';
 import 'theme/cbbc_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations(<DeviceOrientation>[
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Sem trava de orientação: tablet/celular giram livremente entre retrato
+  // e paisagem. Em telas largas as informações ficam mais organizadas
+  // (nomes longos não cortam) — manter as duas opções abertas.
   runApp(const CbbcApp());
 }
 

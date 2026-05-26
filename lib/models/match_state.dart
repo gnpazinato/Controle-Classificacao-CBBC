@@ -1,4 +1,5 @@
 import '../constants/point_limits.dart';
+import '../theme/cbbc_theme.dart';
 import 'player.dart';
 import 'team.dart';
 
@@ -61,9 +62,13 @@ class MatchState {
     this.competitionName,
     BonusRules bonusRules = const BonusRules(),
     DateTime? referenceDate,
+    JerseyColor? teamAJerseyColor,
+    JerseyColor? teamBJerseyColor,
   })  : _pointLimit = pointLimit,
         _bonusRules = bonusRules,
         _referenceDate = referenceDate ?? DateTime.now(),
+        _teamAJerseyColor = teamAJerseyColor ?? JerseyColor.white,
+        _teamBJerseyColor = teamBJerseyColor ?? JerseyColor.darkBlue,
         _teamASlots = _initSlots(teamASlots, fallbackSet: selectedTeamAIds),
         _teamBSlots = _initSlots(teamBSlots, fallbackSet: selectedTeamBIds);
 
@@ -97,12 +102,16 @@ class MatchState {
   double _pointLimit;
   BonusRules _bonusRules;
   final DateTime _referenceDate;
+  final JerseyColor _teamAJerseyColor;
+  final JerseyColor _teamBJerseyColor;
   final List<String?> _teamASlots;
   final List<String?> _teamBSlots;
 
   double get pointLimit => _pointLimit;
   BonusRules get bonusRules => _bonusRules;
   DateTime get referenceDate => _referenceDate;
+  JerseyColor get teamAJerseyColor => _teamAJerseyColor;
+  JerseyColor get teamBJerseyColor => _teamBJerseyColor;
 
   Set<String> get selectedTeamAIds => <String>{
         for (final String? id in _teamASlots)
@@ -147,6 +156,12 @@ class MatchState {
 
   bool get hasBonusInCourtTeamA => hasBonusInCourt(selectedTeamAPlayers);
   bool get hasBonusInCourtTeamB => hasBonusInCourt(selectedTeamBPlayers);
+
+  /// `true` se o atleta atende alguma das regras de bonificação ativas
+  /// (sub-16/sub-23 considerando a data de término da competição;
+  /// feminina). Usado pra mostrar estrelinha ao lado do nome.
+  bool qualifiesForBonus(Player player) =>
+      _bonusRules.qualifies(player, _referenceDate);
 
   double get effectiveLimitTeamA =>
       hasBonusInCourtTeamA ? kBonusPointCeiling : _pointLimit;
@@ -252,6 +267,8 @@ class MatchState {
         'teamBSlots': _teamBSlots,
         'bonusRules': _bonusRules.toJson(),
         'referenceDate': _referenceDate.toIso8601String(),
+        'teamAJerseyColor': _teamAJerseyColor.id,
+        'teamBJerseyColor': _teamBJerseyColor.id,
       };
 
   factory MatchState.fromJson(Map<String, dynamic> json) {
@@ -268,6 +285,14 @@ class MatchState {
       referenceDate: (json['referenceDate'] as String?) == null
           ? null
           : DateTime.parse(json['referenceDate'] as String),
+      teamAJerseyColor: JerseyColor.fromId(
+        json['teamAJerseyColor'] as String?,
+        fallback: JerseyColor.white,
+      ),
+      teamBJerseyColor: JerseyColor.fromId(
+        json['teamBJerseyColor'] as String?,
+        fallback: JerseyColor.darkBlue,
+      ),
     );
   }
 

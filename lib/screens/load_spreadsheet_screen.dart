@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../constants/app_version.dart';
 import '../models/match_state.dart';
 import '../services/cache_service.dart';
 import '../services/import_result.dart';
@@ -243,6 +244,13 @@ class _LoadSpreadsheetScreenState extends State<LoadSpreadsheetScreen> {
               const SizedBox(height: 8),
               Text(
                 'App offline. Sem login. Sem necessidade de internet.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Versão $kAppVersion',
+                key: const Key('app-version-label'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),

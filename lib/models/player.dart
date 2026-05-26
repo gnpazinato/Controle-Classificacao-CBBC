@@ -88,16 +88,21 @@ class Player {
     return age;
   }
 
+  /// Sub-16 vale enquanto o atleta NÃO completou 17 anos até [reference]
+  /// (data de término da competição). Ou seja: vale até a véspera do
+  /// 17º aniversário, inclusive.
   bool isUnderU16(DateTime reference) {
     final int? age = ageAt(reference);
     if (age == null) return false;
-    return age < 16;
+    return age < 17;
   }
 
+  /// Sub-23 vale enquanto o atleta NÃO completou 24 anos até [reference]
+  /// (data de término da competição). Mesma lógica do sub-16.
   bool isUnderU23(DateTime reference) {
     final int? age = ageAt(reference);
     if (age == null) return false;
-    return age < 23;
+    return age < 24;
   }
 
   bool get isFemale => gender == PlayerGender.female;

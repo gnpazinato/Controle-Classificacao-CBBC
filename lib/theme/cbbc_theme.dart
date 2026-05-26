@@ -41,6 +41,48 @@ abstract class CbbcColors {
   static const Color alertRedSurface = Color(0xFFFDECEC);
 }
 
+/// Cores de camiseta oferecidas no setup da partida. Mantidas escuras
+/// (exceto a branca) porque o número da camisa é sempre desenhado em
+/// branco — fundos claros prejudicam a leitura à distância.
+class JerseyColor {
+  const JerseyColor._(this.id, this.label, this.fill, this.numberColor);
+
+  final String id;
+  final String label;
+  final Color fill;
+
+  /// Cor do número da camisa pintado por cima. Branca em fundos escuros;
+  /// preta no fundo branco.
+  final Color numberColor;
+
+  static const JerseyColor black =
+      JerseyColor._('black', 'Preto', Color(0xFF111111), Colors.white);
+  static const JerseyColor white = JerseyColor._(
+      'white', 'Branco', Color(0xFFFFFFFF), CbbcColors.textPrimary);
+  static const JerseyColor darkBlue = JerseyColor._(
+      'darkBlue', 'Azul escuro', Color(0xFF154B82), Colors.white);
+  static const JerseyColor darkRed =
+      JerseyColor._('darkRed', 'Vermelho escuro', Color(0xFF8B1A1A), Colors.white);
+  static const JerseyColor darkGray =
+      JerseyColor._('darkGray', 'Cinza escuro', Color(0xFF3F3F3F), Colors.white);
+
+  static const List<JerseyColor> values = <JerseyColor>[
+    black,
+    white,
+    darkBlue,
+    darkRed,
+    darkGray,
+  ];
+
+  static JerseyColor fromId(String? id, {required JerseyColor fallback}) {
+    if (id == null) return fallback;
+    for (final JerseyColor c in values) {
+      if (c.id == id) return c;
+    }
+    return fallback;
+  }
+}
+
 /// Tema Material 3 do app, com paleta CBBC.
 ThemeData buildCbbcTheme() {
   final ColorScheme scheme = ColorScheme.fromSeed(

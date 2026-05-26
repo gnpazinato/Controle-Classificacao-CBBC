@@ -11,6 +11,16 @@ enum TemplateKind { singleSheet, perTeam }
 /// `data de nascimento`, `gênero`. O modelo "aba única" usa a aba
 /// `Atletas` com todas as colunas. O modelo "uma aba por clube" omite a
 /// coluna `clube` (vem do nome da aba).
+///
+/// **Dados anônimos**: o exemplo dentro do template usa nomes genéricos
+/// (`Equipe A/B/...`, `Atleta 1/2/...`) pra que o usuário não confunda o
+/// modelo com uma lista real. Idades e classes seguem distribuição
+/// realista pra ele perceber se o app interpretou corretamente.
+///
+/// **Célula da data de término**: as duas variantes começam com uma
+/// linha "Data de término da competição: DD/MM/AAAA". O parser detecta
+/// esse rótulo e usa a data como referência das regras sub-16/sub-23
+/// (bonificação só vale enquanto o atleta não completou 17/24 anos).
 class TemplateGeneratorService {
   const TemplateGeneratorService();
 
@@ -33,6 +43,13 @@ class TemplateGeneratorService {
 
   static const String singleSheetTabName = 'Atletas';
 
+  static const String competitionEndLabel =
+      'Data de término da competição (DD/MM/AAAA)';
+
+  /// Exemplo de data de término — uma semana adiante de uma data fixa,
+  /// só pra preencher o template com algo parseável. O usuário edita.
+  static const String _sampleEndDate = '31/12/2026';
+
   /// Distribuição de classes para o exemplo (soma = 35.5).
   static const List<double> _classDistribution = <double>[
     1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.0, 4.0, 4.5, 4.5, 4.5,
@@ -40,6 +57,19 @@ class TemplateGeneratorService {
 
   static const List<int> _shirts = <int>[
     4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  ];
+
+  /// Nomes anônimos dos clubes — o usuário substitui pelos reais.
+  static const List<String> _anonymousClubs = <String>[
+    'Equipe A',
+    'Equipe B',
+    'Equipe C',
+    'Equipe D',
+  ];
+
+  /// Gêneros pra cada slot (8 masc + 4 fem por equipe).
+  static const List<String> _sampleGenders = <String>[
+    'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F',
   ];
 
   Uint8List build(TemplateKind kind) {
@@ -63,6 +93,14 @@ class TemplateGeneratorService {
   Uint8List _buildSingleSheet() {
     final xlsx.Excel excel = xlsx.Excel.createExcel();
     excel.rename(excel.getDefaultSheet()!, singleSheetTabName);
+
+    // Linha 1: rótulo + data de término. Linha 2: vazia. Linha 3+: tabela.
+    excel.appendRow(singleSheetTabName, <xlsx.CellValue?>[
+      xlsx.TextCellValue(competitionEndLabel),
+      xlsx.TextCellValue(_sampleEndDate),
+    ]);
+    excel.appendRow(singleSheetTabName, <xlsx.CellValue?>[]);
+
     excel.appendRow(
       singleSheetTabName,
       singleSheetHeaders
@@ -92,7 +130,18 @@ class TemplateGeneratorService {
       rowsByClub.putIfAbsent(r.club, () => <_SampleRow>[]).add(r);
     }
 
+    bool firstSheet = true;
     for (final String club in rowsByClub.keys) {
+      // Só a primeira aba leva o rótulo da data de término (todas
+      // apontam pra mesma competição). O parser olha qualquer aba.
+      if (firstSheet) {
+        excel.appendRow(club, <xlsx.CellValue?>[
+          xlsx.TextCellValue(competitionEndLabel),
+          xlsx.TextCellValue(_sampleEndDate),
+        ]);
+        excel.appendRow(club, <xlsx.CellValue?>[]);
+        firstSheet = false;
+      }
       excel.appendRow(
         club,
         perTeamHeaders
@@ -138,13 +187,13 @@ class TemplateGeneratorService {
   }
 
   Iterable<_SampleRow> _expandSampleRows() sync* {
-    for (int t = 0; t < _sampleClubs.length; t++) {
-      final _SampleClub club = _sampleClubs[t];
+    for (int t = 0; t < _anonymousClubs.length; t++) {
+      final String clubName = _anonymousClubs[t];
       for (int i = 0; i < 12; i++) {
         yield _SampleRow(
-          club: club.name,
-          fullName: club.athletes[i],
-          gender: club.genders[i],
+          club: clubName,
+          fullName: 'Nome completo atleta ${i + 1}',
+          gender: _sampleGenders[i],
           shirt: _shirts[i],
           playerClass: _classDistribution[i],
           dob: _dobFor(t, i),
@@ -184,62 +233,3 @@ class _SampleRow {
   final double playerClass;
   final String dob;
 }
-
-class _SampleClub {
-  const _SampleClub({
-    required this.name,
-    required this.athletes,
-    required this.genders,
-  });
-
-  final String name;
-  final List<String> athletes;
-  final List<String> genders;
-}
-
-const List<_SampleClub> _sampleClubs = <_SampleClub>[
-  _SampleClub(
-    name: 'ADD Vitória',
-    athletes: <String>[
-      'João Silva', 'Pedro Souza', 'Lucas Oliveira', 'Rafael Costa',
-      'Bruno Lima', 'Felipe Santos', 'Thiago Ferreira', 'Gustavo Almeida',
-      'Mariana Ribeiro', 'Camila Alves', 'Carolina Mendes', 'Beatriz Pinto',
-    ],
-    genders: <String>[
-      'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F',
-    ],
-  ),
-  _SampleClub(
-    name: 'Cruzeiro CR',
-    athletes: <String>[
-      'André Pereira', 'Daniel Carvalho', 'Eduardo Rodrigues', 'Henrique Dias',
-      'Igor Barbosa', 'Mateus Nunes', 'Renato Teixeira', 'Vitor Cardoso',
-      'Larissa Rocha', 'Juliana Martins', 'Fernanda Gomes', 'Amanda Sousa',
-    ],
-    genders: <String>[
-      'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F',
-    ],
-  ),
-  _SampleClub(
-    name: 'Magic Wheels',
-    athletes: <String>[
-      'Leonardo Castro', 'Marcos Vieira', 'Otavio Borges', 'Patrick Moreira',
-      'Roberto Silveira', 'Samuel Costa', 'Tiago Andrade', 'William Freitas',
-      'Isabela Lopes', 'Natália Cunha', 'Letícia Moura', 'Bruna Pereira',
-    ],
-    genders: <String>[
-      'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F',
-    ],
-  ),
-  _SampleClub(
-    name: 'BCR Joinville',
-    athletes: <String>[
-      'Antonio Reis', 'Carlos Nogueira', 'Diego Camargo', 'Eduardo Pires',
-      'Fabio Mendonça', 'Geovane Ribeiro', 'Hugo Tavares', 'Ivan Castro',
-      'Patricia Almeida', 'Renata Souza', 'Sofia Lima', 'Yasmin Costa',
-    ],
-    genders: <String>[
-      'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F',
-    ],
-  ),
-];

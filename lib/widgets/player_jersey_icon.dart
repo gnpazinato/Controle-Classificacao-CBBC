@@ -5,25 +5,29 @@ import '../theme/cbbc_theme.dart';
 
 /// Ícone vetorial de uma camiseta de basquete com o número do atleta.
 ///
-/// Convenção visual:
-/// - Equipe A: camiseta clara → fundo branco com número preto.
-/// - Equipe B: camiseta escura (azul CBBC) → fundo azul com número branco.
+/// A cor de fundo e do número vêm de [jerseyColor] (escolhida pelo
+/// usuário no setup da partida). O fallback respeita a antiga
+/// convenção: branco para a Equipe A, azul CBBC para a Equipe B.
 class PlayerJerseyIcon extends StatelessWidget {
   const PlayerJerseyIcon({
     super.key,
     required this.player,
     required this.isTeamA,
     this.size = 40,
+    this.jerseyColor,
   });
 
   final Player player;
   final bool isTeamA;
   final double size;
+  final JerseyColor? jerseyColor;
 
   @override
   Widget build(BuildContext context) {
-    final Color fill = isTeamA ? Colors.white : CbbcColors.blue;
-    final Color text = isTeamA ? CbbcColors.textPrimary : Colors.white;
+    final JerseyColor color = jerseyColor ??
+        (isTeamA ? JerseyColor.white : JerseyColor.darkBlue);
+    final Color fill = color.fill;
+    final Color text = color.numberColor;
     const Color border = CbbcColors.blueDeep;
 
     return SizedBox(

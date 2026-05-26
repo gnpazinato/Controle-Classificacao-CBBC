@@ -46,6 +46,7 @@ class ImportResult {
     required this.teams,
     required this.issues,
     this.competitionName,
+    this.competitionEndDate,
   });
 
   factory ImportResult.error(String message, ImportIssueCategory category) {
@@ -64,6 +65,12 @@ class ImportResult {
   final List<Team> teams;
   final List<ImportIssue> issues;
   final String? competitionName;
+
+  /// Data de término da competição, extraída de uma célula no topo do
+  /// arquivo (rótulo "Data de término da competição: DD/MM/AAAA"). `null`
+  /// se a planilha não trouxer essa informação — usuária preenche
+  /// manualmente na tela de configuração da partida.
+  final DateTime? competitionEndDate;
 
   bool get hasBlockingIssues =>
       issues.any((ImportIssue i) => i.severity == ImportIssueSeverity.error);

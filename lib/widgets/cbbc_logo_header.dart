@@ -62,9 +62,9 @@ class CbbcBrandHeader extends StatelessWidget {
   }
 }
 
-/// Título empilhado (logo branco em cima, texto da tela embaixo) usado nas
-/// `AppBar`s azuis das telas internas. O logo é tintado de branco via
-/// `ColorFilter` pra ficar legível sobre o fundo azul cobalto.
+/// Título lado-a-lado (logo branco à esquerda, texto da tela à direita)
+/// usado nas `AppBar`s azuis das telas internas. O logo é tintado de
+/// branco via `ColorFilter` pra ficar legível sobre o fundo azul cobalto.
 class CbbcAppBarTitle extends StatelessWidget {
   const CbbcAppBarTitle({super.key, required this.text});
 
@@ -72,13 +72,15 @@ class CbbcAppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
           key: const Key('cbbc-appbar-logo'),
-          height: 38,
+          height: 56,
+          width: 56,
           child: ColorFiltered(
             colorFilter: const ColorFilter.mode(
               Colors.white,
@@ -92,10 +94,13 @@ class CbbcAppBarTitle extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          text,
-          overflow: TextOverflow.ellipsis,
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );

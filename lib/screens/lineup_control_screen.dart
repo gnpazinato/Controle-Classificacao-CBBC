@@ -277,7 +277,6 @@ class _Header extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _ScoreCell(
-                    label: 'Equipe A',
                     total: state.totalPointsTeamA,
                     limit: state.effectiveLimitTeamA,
                     isOver: state.isTeamAOverLimit,
@@ -287,7 +286,6 @@ class _Header extends StatelessWidget {
                 ),
                 Expanded(
                   child: _ScoreCell(
-                    label: 'Equipe B',
                     total: state.totalPointsTeamB,
                     limit: state.effectiveLimitTeamB,
                     isOver: state.isTeamBOverLimit,
@@ -335,7 +333,6 @@ class _Header extends StatelessWidget {
 
 class _ScoreCell extends StatelessWidget {
   const _ScoreCell({
-    required this.label,
     required this.total,
     required this.limit,
     required this.isOver,
@@ -343,7 +340,6 @@ class _ScoreCell extends StatelessWidget {
     required this.keyName,
   });
 
-  final String label;
   final double total;
   final double limit;
   final bool isOver;
@@ -373,30 +369,23 @@ class _ScoreCell extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
+                '${total.toStringAsFixed(1)} / ${limit.toStringAsFixed(1)}',
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
                 ),
               ),
               if (bonusActive) ...<Widget>[
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.star,
-                  size: 12,
+                  size: 14,
                   color: CbbcColors.orange,
                 ),
               ],
             ],
-          ),
-          Text(
-            '${total.toStringAsFixed(1)} / ${limit.toStringAsFixed(1)}',
-            style: TextStyle(
-              color: textColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-            ),
           ),
           SizedBox(
             height: 14,
@@ -432,6 +421,7 @@ class _TabletBody extends StatelessWidget {
           flex: 3,
           child: _TeamPlayerList(
             key: const Key('tablet-team-a-list'),
+            state: state,
             team: state.teamA,
             isTeamA: true,
             selectedIds: state.selectedTeamAIds,
@@ -446,6 +436,7 @@ class _TabletBody extends StatelessWidget {
           flex: 3,
           child: _TeamPlayerList(
             key: const Key('tablet-team-b-list'),
+            state: state,
             team: state.teamB,
             isTeamA: false,
             selectedIds: state.selectedTeamBIds,
@@ -469,11 +460,11 @@ class _PhoneBody extends StatelessWidget {
       length: 3,
       child: Column(
         children: <Widget>[
-          const TabBar(
+          TabBar(
             tabs: <Widget>[
-              Tab(text: 'Equipe A'),
-              Tab(text: 'Quadra'),
-              Tab(text: 'Equipe B'),
+              Tab(text: state.teamA.displayName),
+              const Tab(text: 'Quadra'),
+              Tab(text: state.teamB.displayName),
             ],
           ),
           Expanded(
@@ -481,6 +472,7 @@ class _PhoneBody extends StatelessWidget {
               children: <Widget>[
                 _TeamPlayerList(
                   key: const Key('phone-team-a-list'),
+                  state: state,
                   team: state.teamA,
                   isTeamA: true,
                   selectedIds: state.selectedTeamAIds,
@@ -489,6 +481,7 @@ class _PhoneBody extends StatelessWidget {
                 _CourtView(state: state),
                 _TeamPlayerList(
                   key: const Key('phone-team-b-list'),
+                  state: state,
                   team: state.teamB,
                   isTeamA: false,
                   selectedIds: state.selectedTeamBIds,
@@ -506,12 +499,14 @@ class _PhoneBody extends StatelessWidget {
 class _TeamPlayerList extends StatelessWidget {
   const _TeamPlayerList({
     super.key,
+    required this.state,
     required this.team,
     required this.isTeamA,
     required this.selectedIds,
     required this.onPlayerTap,
   });
 
+  final MatchState state;
   final Team team;
   final bool isTeamA;
   final Set<String> selectedIds;
@@ -563,6 +558,9 @@ class _TeamPlayerList extends StatelessWidget {
                   return _PlayerCard(
                     player: p,
                     isTeamA: isTeamA,
+                    jerseyColor:
+                        isTeamA ? state.teamAJerseyColor : state.teamBJerseyColor,
+                    isBonusEligible: state.qualifiesForBonus(p),
                     selected: selectedIds.contains(p.id),
                     height: slotHeight,
                     onTap: () => onPlayerTap(p),
@@ -581,6 +579,8 @@ class _PlayerCard extends StatelessWidget {
   const _PlayerCard({
     required this.player,
     required this.isTeamA,
+    required this.jerseyColor,
+    required this.isBonusEligible,
     required this.selected,
     required this.height,
     required this.onTap,
@@ -588,6 +588,8 @@ class _PlayerCard extends StatelessWidget {
 
   final Player player;
   final bool isTeamA;
+  final JerseyColor jerseyColor;
+  final bool isBonusEligible;
   final bool selected;
   final double height;
   final VoidCallback onTap;
@@ -623,8 +625,17 @@ class _PlayerCard extends StatelessWidget {
                   player: player,
                   isTeamA: isTeamA,
                   size: iconSize,
+                  jerseyColor: jerseyColor,
                 ),
                 const SizedBox(width: 6),
+                if (isBonusEligible) ...<Widget>[
+                  Icon(
+                    Icons.star,
+                    size: fontSize + 1,
+                    color: CbbcColors.orange,
+                  ),
+                  const SizedBox(width: 2),
+                ],
                 Expanded(
                   child: _AutoShrinkText(
                     text: player.displayName,
@@ -709,17 +720,17 @@ class _CourtView extends StatelessWidget {
                       ),
                     ),
                     if (teamAEmpty)
-                      const Align(
-                        alignment: Alignment(0, -0.55),
+                      Align(
+                        alignment: const Alignment(0, -0.55),
                         child: _CourtHint(
-                          text: 'Toque nos atletas da Equipe A',
+                          text: 'Toque nos atletas da ${state.teamA.displayName}',
                         ),
                       ),
                     if (teamBEmpty)
-                      const Align(
-                        alignment: Alignment(0, 0.55),
+                      Align(
+                        alignment: const Alignment(0, 0.55),
                         child: _CourtHint(
-                          text: 'Toque nos atletas da Equipe B',
+                          text: 'Toque nos atletas da ${state.teamB.displayName}',
                         ),
                       ),
                     for (int i = 0; i < 5; i++)
@@ -727,6 +738,8 @@ class _CourtView extends StatelessWidget {
                         _CourtPlayerSlot(
                           player: teamA[i]!,
                           isTeamA: true,
+                          jerseyColor: state.teamAJerseyColor,
+                          isBonusEligible: state.qualifiesForBonus(teamA[i]!),
                           target: _teamATargets[i],
                           width: w,
                           height: h,
@@ -738,6 +751,8 @@ class _CourtView extends StatelessWidget {
                         _CourtPlayerSlot(
                           player: teamB[i]!,
                           isTeamA: false,
+                          jerseyColor: state.teamBJerseyColor,
+                          isBonusEligible: state.qualifiesForBonus(teamB[i]!),
                           target: _teamBTargets[i],
                           width: w,
                           height: h,
@@ -785,6 +800,8 @@ class _CourtPlayerSlot extends StatelessWidget {
   const _CourtPlayerSlot({
     required this.player,
     required this.isTeamA,
+    required this.jerseyColor,
+    required this.isBonusEligible,
     required this.target,
     required this.width,
     required this.height,
@@ -794,6 +811,8 @@ class _CourtPlayerSlot extends StatelessWidget {
 
   final Player player;
   final bool isTeamA;
+  final JerseyColor jerseyColor;
+  final bool isBonusEligible;
   final Offset target;
   final double width;
   final double height;
@@ -810,6 +829,8 @@ class _CourtPlayerSlot extends StatelessWidget {
         child: _CourtPlayerChip(
           player: player,
           isTeamA: isTeamA,
+          jerseyColor: jerseyColor,
+          isBonusEligible: isBonusEligible,
           maxWidth: slotMaxWidth,
           maxHeight: slotMaxHeight,
         ),
@@ -822,19 +843,23 @@ class _CourtPlayerChip extends StatelessWidget {
   const _CourtPlayerChip({
     required this.player,
     required this.isTeamA,
+    required this.jerseyColor,
+    required this.isBonusEligible,
     required this.maxWidth,
     required this.maxHeight,
   });
 
   final Player player;
   final bool isTeamA;
+  final JerseyColor jerseyColor;
+  final bool isBonusEligible;
   final double maxWidth;
   final double maxHeight;
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = isTeamA ? Colors.white : CbbcColors.blue;
-    final Color fg = isTeamA ? CbbcColors.textPrimary : Colors.white;
+    final Color bg = jerseyColor.fill;
+    final Color fg = jerseyColor.numberColor;
     const Color border = CbbcColors.blueDeep;
 
     final double base = maxHeight;
@@ -872,15 +897,31 @@ class _CourtPlayerChip extends StatelessWidget {
               player: player,
               isTeamA: isTeamA,
               size: iconSize,
+              jerseyColor: jerseyColor,
             ),
             SizedBox(height: gap),
-            _AutoShrinkText(
-              text: player.surnameForChip.toUpperCase(),
-              maxFontSize: fontSize,
-              minFontSize: 6.0,
-              color: fg,
-              fontWeight: FontWeight.w600,
-              textAlign: TextAlign.center,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (isBonusEligible) ...<Widget>[
+                  Icon(
+                    Icons.star,
+                    size: fontSize + 1,
+                    color: CbbcColors.orange,
+                  ),
+                  const SizedBox(width: 1),
+                ],
+                Flexible(
+                  child: _AutoShrinkText(
+                    text: player.surnameForChip.toUpperCase(),
+                    maxFontSize: fontSize,
+                    minFontSize: 6.0,
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
             Text(
               (player.playerClass?.toStringAsFixed(1) ?? '—'),
@@ -914,40 +955,67 @@ class _OperationalButtons extends StatelessWidget {
       elevation: 4,
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              OutlinedButton(
-                key: const Key('clear-team-a-button'),
-                onPressed: onClearTeamA,
-                child: const Text('Limpar Equipe A'),
+        child: LayoutBuilder(
+          builder: (BuildContext _, BoxConstraints c) {
+            // Em telas estreitas (celular) os botões grandes do tema
+            // empurram a lista pra cima e atrapalham a visualização.
+            // Compactamos texto + padding pra liberar espaço.
+            final bool compact = c.maxWidth < 720;
+            final ButtonStyle compactStyle = OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-              OutlinedButton(
-                key: const Key('clear-team-b-button'),
-                onPressed: onClearTeamB,
-                child: const Text('Limpar Equipe B'),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            );
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 4 : 8,
+                vertical: compact ? 4 : 8,
               ),
-              OutlinedButton(
-                key: const Key('clear-all-button'),
-                onPressed: onClearAll,
-                child: const Text('Limpar tudo'),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: compact ? 4 : 8,
+                runSpacing: compact ? 4 : 8,
+                children: <Widget>[
+                  OutlinedButton(
+                    key: const Key('clear-team-a-button'),
+                    onPressed: onClearTeamA,
+                    style: compact ? compactStyle : null,
+                    child: Text(compact ? 'Limpar A' : 'Limpar Equipe A'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('clear-team-b-button'),
+                    onPressed: onClearTeamB,
+                    style: compact ? compactStyle : null,
+                    child: Text(compact ? 'Limpar B' : 'Limpar Equipe B'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('clear-all-button'),
+                    onPressed: onClearAll,
+                    style: compact ? compactStyle : null,
+                    child: const Text('Limpar tudo'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('change-teams-button'),
+                    onPressed: onChangeTeams,
+                    style: compact ? compactStyle : null,
+                    child: Text(compact ? 'Trocar' : 'Trocar equipes'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('load-new-spreadsheet-button'),
+                    onPressed: onLoadNewSpreadsheet,
+                    style: compact ? compactStyle : null,
+                    child: Text(
+                        compact ? 'Outro arquivo' : 'Carregar outro arquivo'),
+                  ),
+                ],
               ),
-              OutlinedButton(
-                key: const Key('change-teams-button'),
-                onPressed: onChangeTeams,
-                child: const Text('Trocar equipes'),
-              ),
-              OutlinedButton(
-                key: const Key('load-new-spreadsheet-button'),
-                onPressed: onLoadNewSpreadsheet,
-                child: const Text('Carregar outro arquivo'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

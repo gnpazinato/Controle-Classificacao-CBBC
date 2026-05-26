@@ -65,6 +65,29 @@ const Map<String, String> kHeaderAliases = <String, String>{
   'nome_da_competicao': 'competition',
 };
 
+/// Rótulos reconhecidos pra célula "Data de término da competição" no
+/// topo da planilha. Tratado fora de [canonicalField] porque é um
+/// metadado solto, não uma coluna de tabela.
+const Set<String> _kCompetitionEndDateLabels = <String>{
+  'data_de_termino_da_competicao',
+  'data_de_termino',
+  'termino_da_competicao',
+  'fim_da_competicao',
+  'competition_end_date',
+  'end_date',
+};
+
+bool isCompetitionEndDateLabel(String raw) {
+  final String key = normalizeHeaderToken(raw);
+  if (key.isEmpty) return false;
+  if (_kCompetitionEndDateLabels.contains(key)) return true;
+  // Permite sufixos comuns como "(DD/MM/AAAA)" ou ":" sem quebrar.
+  for (final String label in _kCompetitionEndDateLabels) {
+    if (key.startsWith('${label}_') || key == label) return true;
+  }
+  return false;
+}
+
 /// Normaliza cabeçalho para chave: lower-case + sem acento + `[a-z0-9_]`.
 String normalizeHeaderToken(String raw) {
   final String lower = raw.trim().toLowerCase();

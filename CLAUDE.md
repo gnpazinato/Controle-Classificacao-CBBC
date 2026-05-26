@@ -35,7 +35,31 @@ Brasileira de Basquetebol em Cadeira de Rodas). UI 100% pt-BR.
 - Workflow `.github/workflows/build-apk.yml` roda em push pra main /
   feat/* / fix/*. Gera APK release não-assinado (keystore debug).
 
+## Versionamento (OBRIGATÓRIO antes de qualquer ajuste)
+
+A cada rodada de ajustes:
+
+1. Leia o topo do `CHANGELOG.md` e o `lib/constants/app_version.dart`
+   pra saber a versão atual.
+2. Faça os ajustes pedidos pelo usuário.
+3. Atualize `kAppVersion` em `lib/constants/app_version.dart` aplicando
+   o bump correto:
+   - **PATCH** (`X.Y.Z` → `X.Y.Z+1`): bug/ajuste de texto/visual.
+   - **MINOR** (`X.Y.Z` → `X.Y+1.0`): novo recurso/tela/regra.
+   - **MAJOR** (`X.Y.Z` → `X+1.0.0`): quebra dados antigos ou redesenha
+     o fluxo principal.
+4. Adicione a entrada nova no topo do `CHANGELOG.md` (data
+   `YYYY-MM-DD` + lista curta dos ajustes).
+5. Não pergunte ao usuário se ele quer atualizar a versão — ele já
+   pediu uma vez (essa convenção foi acordada). Apenas atualize.
+
+A versão é exibida na home (abaixo da frase "App offline. Sem login.
+Sem necessidade de internet.").
+
 ## Estado
 
+- v0.2.0 — segunda rodada de ajustes (templates anônimos, edição no
+  resumo, cores de camiseta, indicador de bonificação, rotação livre,
+  ícone CBBC, AppBar reposicionada).
 - v0.1.0 — primeira release CBBC. Sem testes herdados do IWBF (deletados
   na migração — só `test/smoke_test.dart` valida render + bonus rules).

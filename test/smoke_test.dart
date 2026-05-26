@@ -64,6 +64,44 @@ void main() {
           shirt: 6, cls: 4.5, dob: DateTime.utc(2012, 1, 1), gender: PlayerGender.female);
       expect(rules.qualifies(young, ref), isFalse);
     });
+
+    test('sub-16: completa 17 DEPOIS do fim da competição → qualifica', () {
+      // Competição termina em 16/05/2026. Atleta nasceu em 17/05/2009
+      // (faz 17 anos UM dia depois do fim) → ainda é sub-16.
+      const BonusRules rules = BonusRules(youthU16: true);
+      final DateTime endOfCompetition = DateTime.utc(2026, 5, 16);
+      final Player p = makePlayer(
+          shirt: 7,
+          cls: 4.5,
+          dob: DateTime.utc(2009, 5, 17),
+          gender: PlayerGender.male);
+      expect(rules.qualifies(p, endOfCompetition), isTrue);
+    });
+
+    test('sub-16: completa 17 DURANTE a competição → não qualifica', () {
+      // Atleta nasceu em 15/05/2009 — completa 17 no dia 15/05/2026,
+      // antes do fim em 16/05. Perde a bonificação.
+      const BonusRules rules = BonusRules(youthU16: true);
+      final DateTime endOfCompetition = DateTime.utc(2026, 5, 16);
+      final Player p = makePlayer(
+          shirt: 8,
+          cls: 4.5,
+          dob: DateTime.utc(2009, 5, 15),
+          gender: PlayerGender.male);
+      expect(rules.qualifies(p, endOfCompetition), isFalse);
+    });
+
+    test('sub-23: completa 24 DEPOIS do fim da competição → qualifica', () {
+      const BonusRules rules = BonusRules(youthU23: true);
+      final DateTime endOfCompetition = DateTime.utc(2026, 5, 16);
+      // 17/05/2002 → faz 24 anos em 17/05/2026 (1 dia após fim).
+      final Player p = makePlayer(
+          shirt: 9,
+          cls: 4.5,
+          dob: DateTime.utc(2002, 5, 17),
+          gender: PlayerGender.male);
+      expect(rules.qualifies(p, endOfCompetition), isTrue);
+    });
   });
 
   group('SpreadsheetParserService — formato seccionado CBBC', () {
@@ -108,6 +146,26 @@ void main() {
               i.category == ImportIssueCategory.missingPlayerClass)
           .toList();
       expect(warnings, hasLength(1));
+    });
+
+    test('detecta data de término da competição no topo da aba', () {
+      final SheetData sheet = SheetData(
+        name: 'Atletas',
+        rows: <List<String?>>[
+          <String?>['Data de término da competição', '16/05/2026'],
+          <String?>[null, null, null, null, null, null],
+          <String?>['clube', 'classe', 'atleta', 'camisa', 'data de nascimento', 'genero'],
+          <String?>['Equipe A', '1.0', 'Atleta 1', '4', '01/01/1990', 'M'],
+        ],
+      );
+      const SpreadsheetParserService parser = SpreadsheetParserService();
+      final ImportResult result = parser.parseSheets(<SheetData>[sheet]);
+      expect(result.competitionEndDate, isNotNull);
+      expect(result.competitionEndDate!.year, 2026);
+      expect(result.competitionEndDate!.month, 5);
+      expect(result.competitionEndDate!.day, 16);
+      expect(result.teams, hasLength(1));
+      expect(result.teams.first.clubName, 'Equipe A');
     });
 
     test('uma aba com blocos por clube, sem coluna de gênero', () {

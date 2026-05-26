@@ -74,6 +74,11 @@ class SpreadsheetParserService {
       );
     }
 
+    // Data de término da competição (metadado solto no topo de qualquer
+    // aba). Procura antes do parsing principal pra que seja carregada
+    // mesmo se a tabela em si tiver problema.
+    final DateTime? endDate = _readCompetitionEndDate(nonEmpty);
+
     SheetData? singleSheet;
     for (final SheetData s in nonEmpty) {
       if (_singleSheetNames.contains(s.name.trim().toLowerCase())) {
@@ -82,21 +87,67 @@ class SpreadsheetParserService {
       }
     }
 
+    final ImportResult base;
     if (singleSheet != null) {
-      return _parseSingleSheet(singleSheet);
+      base = _parseSingleSheet(singleSheet);
+    } else {
+      // Se alguma aba parece estar em formato "seções por clube" (várias
+      // linhas de cabeçalho separadas por linhas-título), tenta esse parser
+      // antes de cair no multi-sheet tradicional.
+      final List<SheetData> sectioned = nonEmpty
+          .where(_looksSectionedSheet)
+          .toList();
+      if (sectioned.isNotEmpty) {
+        base = _parseSectionedSheets(sectioned, nonEmpty);
+      } else {
+        base = _parseMultiSheet(nonEmpty);
+      }
     }
 
-    // Se alguma aba parece estar em formato "seções por clube" (várias
-    // linhas de cabeçalho separadas por linhas-título), tenta esse parser
-    // antes de cair no multi-sheet tradicional.
-    final List<SheetData> sectioned = nonEmpty
-        .where(_looksSectionedSheet)
-        .toList();
-    if (sectioned.isNotEmpty) {
-      return _parseSectionedSheets(sectioned, nonEmpty);
-    }
+    return ImportResult(
+      teams: base.teams,
+      issues: base.issues,
+      competitionName: base.competitionName,
+      competitionEndDate: endDate,
+    );
+  }
 
-    return _parseMultiSheet(nonEmpty);
+  /// Procura por uma célula com o rótulo "Data de término da competição"
+  /// (ou variações) em qualquer aba. A data é a primeira célula não-vazia
+  /// na mesma linha após o rótulo, ou na linha imediatamente abaixo.
+  DateTime? _readCompetitionEndDate(List<SheetData> sheets) {
+    for (final SheetData sheet in sheets) {
+      for (int r = 0; r < sheet.rows.length; r++) {
+        final List<String?> row = sheet.rows[r];
+        for (int c = 0; c < row.length; c++) {
+          final String? cell = row[c];
+          if (cell == null) continue;
+          if (!isCompetitionEndDateLabel(cell)) continue;
+
+          // Tenta o resto da mesma linha (à direita do rótulo).
+          for (int c2 = c + 1; c2 < row.length; c2++) {
+            final String? candidate = row[c2];
+            if (candidate == null) continue;
+            final String trimmed = candidate.trim();
+            if (trimmed.isEmpty) continue;
+            final DateTime? parsed = parseDateOfBirth(trimmed);
+            if (parsed != null) return parsed;
+          }
+          // Fallback: célula imediatamente abaixo do rótulo.
+          if (r + 1 < sheet.rows.length) {
+            final List<String?> below = sheet.rows[r + 1];
+            if (c < below.length) {
+              final String? candidate = below[c];
+              if (candidate != null) {
+                final DateTime? parsed = parseDateOfBirth(candidate.trim());
+                if (parsed != null) return parsed;
+              }
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 
   // -------- modo aba única --------
