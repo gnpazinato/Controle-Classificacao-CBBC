@@ -41,6 +41,26 @@ class TemplateGeneratorService {
     'genero',
   ];
 
+  /// Larguras de coluna em "characters" do Excel (1 unidade ≈ 7px no zoom
+  /// padrão). Geramos com folga pra que o usuário não precise puxar
+  /// cada coluna pra ver o conteúdo logo de cara.
+  static const List<double> _singleSheetWidths = <double>[
+    18, // clube
+    10, // classe
+    32, // atleta
+    10, // camisa
+    22, // data de nascimento
+    10, // genero
+  ];
+
+  static const List<double> _perTeamWidths = <double>[
+    10, // classe
+    32, // atleta
+    10, // camisa
+    22, // data de nascimento
+    10, // genero
+  ];
+
   static const String singleSheetTabName = 'Atletas';
 
   static const String competitionEndLabel =
@@ -117,6 +137,7 @@ class TemplateGeneratorService {
         xlsx.TextCellValue(row.gender),
       ]);
     }
+    _applyColumnWidths(excel, singleSheetTabName, _singleSheetWidths);
     return _encode(excel);
   }
 
@@ -157,6 +178,7 @@ class TemplateGeneratorService {
           xlsx.TextCellValue(row.gender),
         ]);
       }
+      _applyColumnWidths(excel, club, _perTeamWidths);
     }
 
     if (defaultSheet != null && !rowsByClub.containsKey(defaultSheet)) {
@@ -164,6 +186,21 @@ class TemplateGeneratorService {
     }
 
     return _encode(excel);
+  }
+
+  /// Aplica largura explícita + flag de auto-fit em cada coluna da aba.
+  /// Largura explícita é o que praticamente todo cliente honra; o
+  /// auto-fit é um hint adicional pra apps que o suportam.
+  void _applyColumnWidths(
+    xlsx.Excel excel,
+    String sheetName,
+    List<double> widths,
+  ) {
+    final xlsx.Sheet sheet = excel.sheets[sheetName]!;
+    for (int i = 0; i < widths.length; i++) {
+      sheet.setColumnWidth(i, widths[i]);
+      sheet.setColumnAutoFit(i);
+    }
   }
 
   Uint8List _encode(xlsx.Excel excel) {

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 ///
 /// - azul cobalto do logo como cor primária;
 /// - laranja-basquete como accent secundário;
-/// - fundo off-white claro;
+/// - fundo Slate 50 moderno (SaaS premium);
 /// - vermelho institucional para alerta de limite excedido.
 abstract class CbbcColors {
   CbbcColors._();
@@ -16,17 +16,32 @@ abstract class CbbcColors {
   /// Variante mais escura — borda/contraste.
   static const Color blueDeep = Color(0xFF154B82);
 
-  /// Variante translúcida — fundos sutis (cards selecionados).
+  /// Variante translúcida — fundos sutis (cards selecionados, bônus).
   static const Color blueSoft = Color(0xFFDCE9F5);
 
   /// Laranja basquete — accent secundário (bola do logo).
   static const Color orange = Color(0xFFE87B2B);
 
-  /// Off-white de fundo geral.
-  static const Color offWhite = Color(0xFFFAFAFA);
+  /// Superfícies elevadas — cards são brancos puros.
+  static const Color surface = Colors.white;
 
-  /// Superfícies elevadas (cards, headers).
-  static const Color offWhiteElevated = Color(0xFFF1F4F8);
+  /// Fundo geral da aplicação (Slate 50 — off-white moderno).
+  static const Color slate50 = Color(0xFFF8FAFC);
+
+  /// Fill de inputs e estados de hover sutil.
+  static const Color slate100 = Color(0xFFF1F5F9);
+
+  /// Bordas sutis de cards e separadores discretos.
+  static const Color slate200 = Color(0xFFE2E8F0);
+
+  /// Verde de sucesso usado no status "Arquivo carregado com sucesso".
+  static const Color successGreen = Color(0xFF1B8A3A);
+
+  /// Compat: alias para [slate50] (uso histórico, evitar em código novo).
+  static const Color offWhite = slate50;
+
+  /// Compat: alias para [slate100] (uso histórico, evitar em código novo).
+  static const Color offWhiteElevated = slate100;
 
   /// Texto principal.
   static const Color textPrimary = Color(0xFF1A1A1A);
@@ -60,7 +75,7 @@ class JerseyColor {
   static const JerseyColor white = JerseyColor._(
       'white', 'Branco', Color(0xFFFFFFFF), CbbcColors.textPrimary);
   static const JerseyColor darkBlue = JerseyColor._(
-      'darkBlue', 'Azul escuro', Color(0xFF154B82), Colors.white);
+      'darkBlue', 'Azul marinho', Color(0xFF0E2547), Colors.white);
   static const JerseyColor darkRed =
       JerseyColor._('darkRed', 'Vermelho escuro', Color(0xFF8B1A1A), Colors.white);
   static const JerseyColor darkGray =
@@ -92,7 +107,7 @@ ThemeData buildCbbcTheme() {
     onPrimary: Colors.white,
     secondary: CbbcColors.orange,
     onSecondary: Colors.white,
-    surface: CbbcColors.offWhite,
+    surface: CbbcColors.surface,
     onSurface: CbbcColors.textPrimary,
     error: CbbcColors.alertRed,
     onError: Colors.white,
@@ -108,7 +123,7 @@ ThemeData buildCbbcTheme() {
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: scheme,
-    scaffoldBackgroundColor: CbbcColors.offWhite,
+    scaffoldBackgroundColor: CbbcColors.slate50,
     textTheme: textTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: CbbcColors.blue,
@@ -132,7 +147,7 @@ ThemeData buildCbbcTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
     ),
@@ -143,7 +158,7 @@ ThemeData buildCbbcTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     ),
@@ -153,9 +168,36 @@ ThemeData buildCbbcTheme() {
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: CbbcColors.slate100,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CbbcColors.slate200, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CbbcColors.slate200, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CbbcColors.blue, width: 1.6),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CbbcColors.alertRed, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CbbcColors.alertRed, width: 1.6),
+      ),
+      labelStyle: const TextStyle(color: CbbcColors.textSecondary),
+    ),
     dropdownMenuTheme: const DropdownMenuThemeData(
       menuStyle: MenuStyle(
-        backgroundColor: WidgetStatePropertyAll<Color>(CbbcColors.offWhite),
+        backgroundColor: WidgetStatePropertyAll<Color>(CbbcColors.surface),
       ),
     ),
     checkboxTheme: CheckboxThemeData(
@@ -168,18 +210,39 @@ ThemeData buildCbbcTheme() {
       checkColor: const WidgetStatePropertyAll<Color>(Colors.white),
       side: const BorderSide(color: CbbcColors.blueDeep, width: 1.4),
     ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith<Color?>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return CbbcColors.slate100;
+        },
+      ),
+      trackColor: WidgetStateProperty.resolveWith<Color?>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) return CbbcColors.blue;
+          return CbbcColors.slate200;
+        },
+      ),
+      trackOutlineColor: WidgetStateProperty.resolveWith<Color?>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) return CbbcColors.blueDeep;
+          return CbbcColors.slate200;
+        },
+      ),
+    ),
     cardTheme: CardThemeData(
-      color: CbbcColors.offWhiteElevated,
-      elevation: 0,
+      color: CbbcColors.surface,
+      elevation: 1,
+      shadowColor: const Color(0x14000000),
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Color(0x22000000)),
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: CbbcColors.slate200, width: 1),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: Color(0x1A000000),
+      color: CbbcColors.slate200,
       thickness: 1,
       space: 1,
     ),
@@ -189,7 +252,7 @@ ThemeData buildCbbcTheme() {
       behavior: SnackBarBehavior.floating,
     ),
     dialogTheme: const DialogThemeData(
-      backgroundColor: CbbcColors.offWhite,
+      backgroundColor: CbbcColors.surface,
       surfaceTintColor: Colors.transparent,
     ),
   );

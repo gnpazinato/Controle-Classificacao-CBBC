@@ -179,14 +179,17 @@ class _LineupControlScreenState extends State<LineupControlScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const CbbcAppBarTitle(text: 'Quadra ao vivo'),
+          actions: <Widget>[
+            _PointLimitMenu(
+              current: _state.pointLimit,
+              onChanged: _onPointLimitChanged,
+            ),
+          ],
         ),
         body: SafeArea(
           child: Column(
             children: <Widget>[
-              _Header(
-                state: _state,
-                onPointLimitChanged: _onPointLimitChanged,
-              ),
+              _Header(state: _state),
               Expanded(
                 child: LayoutBuilder(
                   builder: (BuildContext _, BoxConstraints c) {
@@ -223,32 +226,46 @@ enum _Side { a, b }
 typedef _PlayerTapCallback = void Function(Player player, _Side side);
 
 class _Header extends StatelessWidget {
-  const _Header({required this.state, required this.onPointLimitChanged});
+  const _Header({required this.state});
 
   final MatchState state;
-  final ValueChanged<double> onPointLimitChanged;
 
   @override
   Widget build(BuildContext context) {
     final TextStyle teamStyle = Theme.of(context)
             .textTheme
             .titleSmall
-            ?.copyWith(fontWeight: FontWeight.w700) ??
+            ?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: CbbcColors.blueDeep) ??
         const TextStyle(fontWeight: FontWeight.w700);
     final String? compName = state.competitionName;
+    // Em telas baixas (paisagem de celular pequeno), esconder o nome da
+    // competição pra liberar espaço vertical pro score + quadra.
+    final bool showComp = MediaQuery.of(context).size.height >= 520 &&
+        compName != null &&
+        compName.isNotEmpty;
     return Material(
-      color: CbbcColors.offWhiteElevated,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      color: CbbcColors.surface,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: CbbcColors.slate200, width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (compName != null && compName.isNotEmpty)
+            if (showComp)
               Padding(
-                padding: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   compName,
-                  style: teamStyle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: CbbcColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -272,7 +289,7 @@ class _Header extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(
               children: <Widget>[
                 Expanded(
@@ -284,6 +301,7 @@ class _Header extends StatelessWidget {
                     keyName: 'score-team-a',
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _ScoreCell(
                     total: state.totalPointsTeamB,
@@ -295,38 +313,66 @@ class _Header extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Text('Pontuação máx.:', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 6),
-                DropdownButton<double>(
-                  key: const Key('lineup-point-limit-dropdown'),
-                  value: state.pointLimit,
-                  isDense: true,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: CbbcColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  items: kAcceptedPointLimits
-                      .map(
-                        (double v) => DropdownMenuItem<double>(
-                          value: v,
-                          child: Text(v.toStringAsFixed(1)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (double? next) {
-                    if (next != null) onPointLimitChanged(next);
-                  },
-                ),
-              ],
-            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PointLimitMenu extends StatelessWidget {
+  const _PointLimitMenu({required this.current, required this.onChanged});
+
+  final double current;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<double>(
+      key: const Key('lineup-point-limit-dropdown'),
+      tooltip: 'Pontuação máxima por equipe',
+      icon: const Icon(Icons.tune, color: Colors.white),
+      onSelected: onChanged,
+      itemBuilder: (BuildContext _) => <PopupMenuEntry<double>>[
+        const PopupMenuItem<double>(
+          enabled: false,
+          child: Text(
+            'Pontuação máxima',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: CbbcColors.textSecondary,
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const PopupMenuDivider(),
+        ...kAcceptedPointLimits.map(
+          (double v) => PopupMenuItem<double>(
+            value: v,
+            child: Row(
+              children: <Widget>[
+                SizedBox(
+                  width: 24,
+                  child: Icon(
+                    v == current ? Icons.check : null,
+                    color: CbbcColors.blue,
+                    size: 18,
+                  ),
+                ),
+                Text(
+                  v.toStringAsFixed(1),
+                  style: TextStyle(
+                    fontWeight: v == current
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -348,18 +394,29 @@ class _ScoreCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color textColor =
-        isOver ? CbbcColors.alertRed : CbbcColors.textPrimary;
-    return Container(
+    final Color totalColor =
+        isOver ? CbbcColors.alertRed : CbbcColors.blueDeep;
+    return AnimatedContainer(
       key: Key(keyName),
-      margin: const EdgeInsets.symmetric(horizontal: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: isOver ? CbbcColors.alertRedSurface : Colors.transparent,
+        color: isOver ? CbbcColors.alertRedSurface : CbbcColors.slate50,
         border: Border.all(
-          color: isOver ? CbbcColors.alertRed : Colors.black12,
+          color: isOver ? CbbcColors.alertRed : CbbcColors.slate200,
+          width: isOver ? 1.6 : 1,
         ),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: isOver
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: CbbcColors.alertRed.withValues(alpha: 0.32),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -369,19 +426,34 @@ class _ScoreCell extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                '${total.toStringAsFixed(1)} / ${limit.toStringAsFixed(1)}',
+                total.toStringAsFixed(1),
                 style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
+                  color: totalColor,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0,
+                  fontFeatures: const <FontFeature>[
+                    FontFeature.tabularFigures(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '/ ${limit.toStringAsFixed(1)}',
+                style: const TextStyle(
+                  color: CbbcColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: <FontFeature>[
+                    FontFeature.tabularFigures(),
+                  ],
                 ),
               ),
               if (bonusActive) ...<Widget>[
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.star,
-                  size: 14,
+                  size: 16,
                   color: CbbcColors.orange,
                 ),
               ],
@@ -596,60 +668,91 @@ class _PlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
     final double iconSize = (height * 0.78).clamp(22.0, 44.0);
     final double fontSize = (height * 0.32).clamp(11.0, 14.0);
     final double verticalPadding = (height * 0.08).clamp(2.0, 6.0);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: verticalPadding * 0.4),
-      child: Material(
-        color: selected ? cs.primaryContainer : Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-          side: BorderSide(
-            color: selected ? cs.primary : Colors.black12,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: selected
+              ? CbbcColors.blueSoft.withValues(alpha: 0.7)
+              : CbbcColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? CbbcColors.blue : CbbcColors.slate200,
+            width: selected ? 1.2 : 1,
           ),
         ),
-        child: InkWell(
-          key: Key('player-card-${player.id}'),
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: verticalPadding,
-            ),
-            child: Row(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: Key('player-card-${player.id}'),
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
               children: <Widget>[
-                PlayerJerseyIcon(
-                  player: player,
-                  isTeamA: isTeamA,
-                  size: iconSize,
-                  jerseyColor: jerseyColor,
-                ),
-                const SizedBox(width: 6),
-                if (isBonusEligible) ...<Widget>[
-                  Icon(
-                    Icons.star,
-                    size: fontSize + 1,
-                    color: CbbcColors.orange,
+                if (selected)
+                  Positioned(
+                    left: 0,
+                    top: 4,
+                    bottom: 4,
+                    child: Container(
+                      width: 3,
+                      decoration: BoxDecoration(
+                        color: CbbcColors.blue,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 2),
-                ],
-                Expanded(
-                  child: _AutoShrinkText(
-                    text: player.displayName,
-                    maxFontSize: fontSize,
-                    minFontSize: 7.0,
-                    textAlign: TextAlign.left,
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    selected ? 9 : 6,
+                    verticalPadding,
+                    6,
+                    verticalPadding,
                   ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  (player.playerClass?.toStringAsFixed(1) ?? '—'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: fontSize,
+                  child: Row(
+                    children: <Widget>[
+                      PlayerJerseyIcon(
+                        player: player,
+                        isTeamA: isTeamA,
+                        size: iconSize,
+                        jerseyColor: jerseyColor,
+                      ),
+                      const SizedBox(width: 6),
+                      if (isBonusEligible) ...<Widget>[
+                        Icon(
+                          Icons.star,
+                          size: fontSize + 1,
+                          color: CbbcColors.orange,
+                        ),
+                        const SizedBox(width: 2),
+                      ],
+                      Expanded(
+                        child: Text(
+                          player.displayName,
+                          maxLines: 3,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        (player.playerClass?.toStringAsFixed(1) ?? '—'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: fontSize,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -696,17 +799,29 @@ class _CourtView extends StatelessWidget {
     return Center(
       key: const Key('court-view'),
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         child: AspectRatio(
           aspectRatio: _aspectRatio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LayoutBuilder(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: CbbcColors.slate200, width: 1.5),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: LayoutBuilder(
               builder: (BuildContext _, BoxConstraints c) {
                 final double w = c.maxWidth;
                 final double h = c.maxHeight;
-                final double slotMaxWidth = (w * 0.34).clamp(60.0, 150.0);
-                final double slotMaxHeight = (h * 0.12).clamp(46.0, 110.0);
+                final double slotMaxWidth = (w * 0.28).clamp(52.0, 110.0);
+                final double slotMaxHeight = (h * 0.10).clamp(40.0, 78.0);
                 return Stack(
                   alignment: Alignment.center,
                   children: <Widget>[
@@ -762,6 +877,7 @@ class _CourtView extends StatelessWidget {
                   ],
                 );
               },
+            ),
             ),
           ),
         ),
@@ -860,14 +976,20 @@ class _CourtPlayerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color bg = jerseyColor.fill;
     final Color fg = jerseyColor.numberColor;
-    const Color border = CbbcColors.blueDeep;
+    // Contorno = mesma cor do número da camisa. Como [numberColor] foi
+    // escolhido pra contrastar com [fill], o contorno fica visível em
+    // qualquer uniforme (branco → contorno escuro; azul/preto/etc. →
+    // contorno branco).
+    final Color border = fg;
 
     final double base = maxHeight;
-    final double iconSize = (base * 0.46).clamp(18.0, 42.0);
-    final double fontSize = (base * 0.15).clamp(7.5, 11.5);
-    final double horizontalPad = (base * 0.06).clamp(2.0, 6.0);
-    final double verticalPad = (base * 0.04).clamp(1.5, 4.0);
-    final double gap = (base * 0.02).clamp(0.5, 2.0);
+    // Sizes calibrados pra que o conteúdo (icone + nome + classe +
+    // padding + gap) caiba mesmo no menor [base] possível (40px).
+    final double iconSize = (base * 0.40).clamp(14.0, 28.0);
+    final double fontSize = (base * 0.16).clamp(7.5, 10.5);
+    final double horizontalPad = (base * 0.05).clamp(2.0, 4.0);
+    final double verticalPad = (base * 0.025).clamp(1.0, 2.5);
+    final double gap = (base * 0.015).clamp(0.5, 1.5);
 
     return SizedBox(
       width: maxWidth,
@@ -879,26 +1001,27 @@ class _CourtPlayerChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: bg,
-          border: Border.all(color: border, width: 1.2),
-          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: border, width: 1.4),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: <Widget>[
-            PlayerJerseyIcon(
-              player: player,
-              isTeamA: isTeamA,
-              size: iconSize,
-              jerseyColor: jerseyColor,
-            ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              PlayerJerseyIcon(
+                player: player,
+                isTeamA: isTeamA,
+                size: iconSize,
+                jerseyColor: jerseyColor,
+              ),
             SizedBox(height: gap),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -913,11 +1036,11 @@ class _CourtPlayerChip extends StatelessWidget {
                 ],
                 Flexible(
                   child: _AutoShrinkText(
-                    text: player.surnameForChip.toUpperCase(),
+                    text: player.firstNameForChip.toUpperCase(),
                     maxFontSize: fontSize,
                     minFontSize: 6.0,
                     color: fg,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -925,9 +1048,15 @@ class _CourtPlayerChip extends StatelessWidget {
             ),
             Text(
               (player.playerClass?.toStringAsFixed(1) ?? '—'),
-              style: TextStyle(color: fg, fontSize: fontSize, height: 1.0),
+              style: TextStyle(
+                color: fg,
+                fontSize: fontSize,
+                height: 1.0,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -952,64 +1081,71 @@ class _OperationalButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 4,
+      color: CbbcColors.surface,
+      elevation: 6,
+      shadowColor: const Color(0x22000000),
       child: SafeArea(
         top: false,
         child: LayoutBuilder(
           builder: (BuildContext _, BoxConstraints c) {
-            // Em telas estreitas (celular) os botões grandes do tema
-            // empurram a lista pra cima e atrapalham a visualização.
-            // Compactamos texto + padding pra liberar espaço.
+            // Em telas estreitas (celular) compactamos texto + padding,
+            // mas mantemos tap-target acima de 40dp e ícones padronizados
+            // pra que cada botão seja reconhecível mesmo com label curto.
             final bool compact = c.maxWidth < 720;
             final ButtonStyle compactStyle = OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               textStyle: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
-              minimumSize: const Size(0, 32),
+              minimumSize: const Size(0, 40),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
             );
             return Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: compact ? 4 : 8,
-                vertical: compact ? 4 : 8,
+                horizontal: compact ? 6 : 10,
+                vertical: compact ? 6 : 10,
               ),
               child: Wrap(
                 alignment: WrapAlignment.center,
-                spacing: compact ? 4 : 8,
-                runSpacing: compact ? 4 : 8,
+                spacing: compact ? 6 : 10,
+                runSpacing: compact ? 6 : 10,
                 children: <Widget>[
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('clear-team-a-button'),
                     onPressed: onClearTeamA,
                     style: compact ? compactStyle : null,
-                    child: Text(compact ? 'Limpar A' : 'Limpar Equipe A'),
+                    icon: const Icon(Icons.backspace_outlined, size: 16),
+                    label: Text(compact ? 'Limpar A' : 'Limpar Equipe A'),
                   ),
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('clear-team-b-button'),
                     onPressed: onClearTeamB,
                     style: compact ? compactStyle : null,
-                    child: Text(compact ? 'Limpar B' : 'Limpar Equipe B'),
+                    icon: const Icon(Icons.backspace_outlined, size: 16),
+                    label: Text(compact ? 'Limpar B' : 'Limpar Equipe B'),
                   ),
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('clear-all-button'),
                     onPressed: onClearAll,
                     style: compact ? compactStyle : null,
-                    child: const Text('Limpar tudo'),
+                    icon: const Icon(Icons.delete_sweep_outlined, size: 16),
+                    label: const Text('Limpar tudo'),
                   ),
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('change-teams-button'),
                     onPressed: onChangeTeams,
                     style: compact ? compactStyle : null,
-                    child: Text(compact ? 'Trocar' : 'Trocar equipes'),
+                    icon: const Icon(Icons.swap_horiz, size: 16),
+                    label: Text(compact ? 'Trocar' : 'Trocar equipes'),
                   ),
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('load-new-spreadsheet-button'),
                     onPressed: onLoadNewSpreadsheet,
                     style: compact ? compactStyle : null,
-                    child: Text(
+                    icon: const Icon(Icons.upload_file, size: 16),
+                    label: Text(
                         compact ? 'Outro arquivo' : 'Carregar outro arquivo'),
                   ),
                 ],

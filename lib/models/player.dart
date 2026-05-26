@@ -72,6 +72,19 @@ class Player {
     return parts.last;
   }
 
+  /// Primeiro nome — usado em chips compactos em quadra (mais
+  /// reconhecível à distância que o sobrenome em listas com vários
+  /// jogadores da mesma família).
+  String get firstNameForChip {
+    final List<String> parts = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String s) => s.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return fullName;
+    return parts.first;
+  }
+
   bool get hasValidClass {
     final double? c = playerClass;
     return c != null && isAcceptedPlayerClass(c);

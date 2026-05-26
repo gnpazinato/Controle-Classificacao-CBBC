@@ -28,7 +28,9 @@ class PlayerJerseyIcon extends StatelessWidget {
         (isTeamA ? JerseyColor.white : JerseyColor.darkBlue);
     final Color fill = color.fill;
     final Color text = color.numberColor;
-    const Color border = CbbcColors.blueDeep;
+    // Contorno na mesma cor do número — naturalmente contrasta com o
+    // fill (numberColor já é escolhido pra ser legível sobre o fill).
+    final Color border = text;
 
     return SizedBox(
       width: size,

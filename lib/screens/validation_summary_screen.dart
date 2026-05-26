@@ -253,7 +253,7 @@ class _ValidationSummaryScreenState extends State<ValidationSummaryScreen> {
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             key: Key('team-tile-${team.id}'),
-            tilePadding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+            tilePadding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
             childrenPadding: EdgeInsets.zero,
             title: Text(
               team.displayName,
@@ -646,7 +646,13 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle? titleStyle = Theme.of(context).textTheme.titleMedium;
+    final TextTheme text = Theme.of(context).textTheme;
+    final Color statusColor =
+        hasBlockingIssues ? CbbcColors.alertRed : CbbcColors.successGreen;
+    final Color statusBg = hasBlockingIssues
+        ? CbbcColors.alertRedSurface
+        : CbbcColors.successGreen.withValues(alpha: 0.10);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -654,38 +660,143 @@ class _Header extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             if (competitionName != null && competitionName!.isNotEmpty) ...<Widget>[
-              Text('Competição: $competitionName', style: titleStyle),
-              const SizedBox(height: 4),
+              Text(
+                competitionName!,
+                style: text.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: CbbcColors.blueDeep,
+                ),
+              ),
+              const SizedBox(height: 2),
             ],
             if (competitionEndDate != null) ...<Widget>[
-              Text('Término da competição: ${_fmtDate(competitionEndDate!)}'),
-              const SizedBox(height: 4),
-            ],
-            Text('Clubes: $clubCount'),
-            Text('Atletas: $playerCount'),
-            const SizedBox(height: 8),
+              Text(
+                'Término: ${_fmtDate(competitionEndDate!)}',
+                style: text.bodySmall
+                    ?.copyWith(color: CbbcColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+            ] else
+              const SizedBox(height: 6),
             Row(
               children: <Widget>[
-                Icon(
-                  hasBlockingIssues
-                      ? Icons.error_outline
-                      : Icons.check_circle_outline,
-                  color: hasBlockingIssues
-                      ? CbbcColors.alertRed
-                      : const Color(0xFF1B8A3A),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    hasBlockingIssues
-                        ? 'O arquivo tem erros — corrija antes de continuar.'
-                        : 'Arquivo carregado com sucesso.',
+                  child: _StatBadge(
+                    icon: Icons.groups_outlined,
+                    value: clubCount.toString(),
+                    label: 'Clubes',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatBadge(
+                    icon: Icons.sports_basketball_outlined,
+                    value: playerCount.toString(),
+                    label: 'Atletas',
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    hasBlockingIssues
+                        ? Icons.error_outline
+                        : Icons.check_circle_outline,
+                    color: statusColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      hasBlockingIssues
+                          ? 'O arquivo tem erros — corrija antes de continuar.'
+                          : 'Arquivo carregado com sucesso.',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: CbbcColors.blueSoft.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: CbbcColors.blue.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: CbbcColors.surface,
+            ),
+            child: Icon(icon, color: CbbcColors.blue, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: CbbcColors.blueDeep,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: CbbcColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -719,29 +830,37 @@ class _IssueBlock extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color,
-        border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(color: borderColor, width: 4),
+          top: BorderSide(color: borderColor.withValues(alpha: 0.25)),
+          right: BorderSide(color: borderColor.withValues(alpha: 0.25)),
+          bottom: BorderSide(color: borderColor.withValues(alpha: 0.25)),
+        ),
       ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(icon, color: borderColor),
+              Icon(icon, color: borderColor, size: 20),
               const SizedBox(width: 8),
               Text(
                 '$title (${issues.length})',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: borderColor,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           ...preview.map((ImportIssue issue) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text('• ${issue.message}'),
+                child: Text('•  ${issue.message}'),
               )),
           if (remaining > 0)
             Padding(

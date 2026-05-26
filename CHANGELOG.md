@@ -24,6 +24,34 @@ internet."
 
 ---
 
+## 0.3.0 — 2026-05-26
+
+- **Refresh visual estilo SaaS premium.** Paleta institucional CBBC
+  mantida (azul cobalto + laranja), mas com fundo Slate 50, cards
+  brancos com sombra suave, inputs arredondados e borda discreta.
+- Home: botão de carregar arquivo virou cartão tapável com ícone de
+  nuvem em destaque; modelos de planilha agrupados em um único card
+  "Modelos de referência" com botões lado a lado; ícone discreto na
+  frase "App offline".
+- Resumo da importação: cabeçalho com badges separados de Clubes e
+  Atletas, status de sucesso/erro com fundo pastel próprio, blocos de
+  avisos/erros com faixa lateral colorida (vermelho/laranja).
+- Configuração da partida: cada equipe envolvida em card próprio com
+  título e barra azul à esquerda; bonificações agora usam interruptores
+  (`SwitchListTile`) em vez de checkboxes; campos de formulário herdam
+  o novo estilo Slate dos inputs.
+- Quadra: soma de pontos de classificação fica em destaque (fonte 26pt
+  em negrito, números com largura tabular para não "saltar"); quando o
+  limite é excedido a célula ganha um glow vermelho animado; quadra
+  com moldura refinada e sombra suave; atleta selecionado tem barra
+  lateral azul + fundo azul translúcido com transição animada; botões
+  operacionais ganharam ícones padronizados e altura mínima maior em
+  celulares (acessibilidade); dropdown de pontuação máxima saiu do
+  cabeçalho e virou ícone de ajustes no `AppBar`, liberando espaço
+  vertical para a quadra.
+- Templates `.xlsx`: colunas agora abrem com largura suficiente para o
+  conteúdo (sem precisar puxar manualmente coluna por coluna).
+
 ## 0.2.0 — 2026-05-26
 
 - Templates `.xlsx` agora usam dados anônimos (`Equipe A/B/...`,

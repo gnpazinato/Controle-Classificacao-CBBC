@@ -10,6 +10,7 @@ import '../services/import_result.dart';
 import '../services/pdf_parser_service.dart';
 import '../services/spreadsheet_parser_service.dart';
 import '../services/template_generator_service.dart';
+import '../theme/cbbc_theme.dart';
 import '../utils/template_saver.dart' as platform_saver;
 import '../widgets/cbbc_logo_header.dart';
 import 'match_setup_screen.dart';
@@ -199,12 +200,11 @@ class _LoadSpreadsheetScreenState extends State<LoadSpreadsheetScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const SizedBox(height: 16),
               const CbbcBrandHeader(
                 subtitle: 'Basquetebol em cadeira de rodas — controle de pontos por equipe',
               ),
@@ -213,46 +213,42 @@ class _LoadSpreadsheetScreenState extends State<LoadSpreadsheetScreen> {
                 'Carregue a planilha ou PDF de referência dos atletas para iniciar uma partida.',
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                key: const Key('load-spreadsheet-button'),
-                onPressed: _busy ? null : _onLoadPressed,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Carregar planilha (.xlsx) ou PDF'),
+              const SizedBox(height: 24),
+              _UploadCard(
+                busy: _busy,
+                onTap: _busy ? null : _onLoadPressed,
               ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                key: const Key('download-template-single-sheet'),
-                onPressed: _busy
-                    ? null
-                    : () =>
-                        _onDownloadTemplatePressed(TemplateKind.singleSheet),
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Baixar modelo — aba única'),
+              const SizedBox(height: 14),
+              _TemplatesCard(
+                busy: _busy,
+                onSingleSheet: () =>
+                    _onDownloadTemplatePressed(TemplateKind.singleSheet),
+                onPerTeam: () =>
+                    _onDownloadTemplatePressed(TemplateKind.perTeam),
               ),
-              const _OrDivider(),
-              OutlinedButton.icon(
-                key: const Key('download-template-per-team'),
-                onPressed: _busy
-                    ? null
-                    : () => _onDownloadTemplatePressed(TemplateKind.perTeam),
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Baixar modelo — uma aba por clube'),
-              ),
-              const Spacer(),
-              if (_busy) const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              Text(
-                'App offline. Sem login. Sem necessidade de internet.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              if (_busy) ...<Widget>[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const _OfflineFooter(),
               const SizedBox(height: 4),
               Text(
                 'Versão $kAppVersion',
                 key: const Key('app-version-label'),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: CbbcColors.textSecondary,
+                    ),
               ),
             ],
           ),
@@ -262,27 +258,169 @@ class _LoadSpreadsheetScreenState extends State<LoadSpreadsheetScreen> {
   }
 }
 
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
+class _UploadCard extends StatelessWidget {
+  const _UploadCard({required this.busy, required this.onTap});
+
+  final bool busy;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle? style = Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(fontWeight: FontWeight.w600);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: <Widget>[
-          const Expanded(child: Divider(thickness: 1)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text('ou', style: style),
+    return Material(
+      color: CbbcColors.blueSoft.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        key: const Key('load-spreadsheet-button'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: busy
+                  ? CbbcColors.slate200
+                  : CbbcColors.blue.withValues(alpha: 0.45),
+              width: 1.5,
+            ),
           ),
-          const Expanded(child: Divider(thickness: 1)),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: CbbcColors.surface,
+                  shape: BoxShape.circle,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.cloud_upload_outlined,
+                  size: 30,
+                  color: CbbcColors.blue,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Carregar planilha (.xlsx) ou PDF',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: CbbcColors.blueDeep,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Toque para escolher o arquivo de referência dos atletas.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: CbbcColors.textSecondary,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _TemplatesCard extends StatelessWidget {
+  const _TemplatesCard({
+    required this.busy,
+    required this.onSingleSheet,
+    required this.onPerTeam,
+  });
+
+  final bool busy;
+  final VoidCallback onSingleSheet;
+  final VoidCallback onPerTeam;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.description_outlined,
+                  size: 18,
+                  color: CbbcColors.blueDeep,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Modelos de referência',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: CbbcColors.blueDeep,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('download-template-single-sheet'),
+                    onPressed: busy ? null : onSingleSheet,
+                    icon: const Icon(Icons.download_outlined, size: 18),
+                    label: const Text('Aba única'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('download-template-per-team'),
+                    onPressed: busy ? null : onPerTeam,
+                    icon: const Icon(Icons.download_outlined, size: 18),
+                    label: const Text('Por clube'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OfflineFooter extends StatelessWidget {
+  const _OfflineFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle? style = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: CbbcColors.textSecondary,
+        );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        const Icon(
+          Icons.cloud_off_outlined,
+          size: 14,
+          color: CbbcColors.textSecondary,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'App offline. Sem login. Sem necessidade de internet.',
+          textAlign: TextAlign.center,
+          style: style,
+        ),
+      ],
     );
   }
 }

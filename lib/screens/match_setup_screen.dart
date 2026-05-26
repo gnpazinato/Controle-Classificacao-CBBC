@@ -148,45 +148,67 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'Competição: $compName',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    compName,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: CbbcColors.blueDeep,
+                        ),
                   ),
                 ),
-              _TeamDropdown(
-                key: const Key('team-a-dropdown'),
-                label: 'Selecionar Equipe A',
-                value: _teamA,
-                teams: teams,
-                onChanged: (Team? value) => setState(() => _teamA = value),
-              ),
-              if (_teamA != null) ...<Widget>[
-                const SizedBox(height: 8),
-                _JerseyColorPicker(
-                  keyName: 'team-a-color',
-                  label: 'Cor da camiseta — Equipe A',
-                  selected: _teamAColor,
-                  onChanged: (JerseyColor c) =>
-                      setState(() => _teamAColor = c),
+              _TeamCard(
+                title: 'Equipe A',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _TeamDropdown(
+                      key: const Key('team-a-dropdown'),
+                      label: 'Selecionar Equipe A',
+                      value: _teamA,
+                      teams: teams,
+                      onChanged: (Team? value) =>
+                          setState(() => _teamA = value),
+                    ),
+                    if (_teamA != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _JerseyColorPicker(
+                        keyName: 'team-a-color',
+                        label: 'Cor da camiseta',
+                        selected: _teamAColor,
+                        onChanged: (JerseyColor c) =>
+                            setState(() => _teamAColor = c),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              const SizedBox(height: 16),
-              _TeamDropdown(
-                key: const Key('team-b-dropdown'),
-                label: 'Selecionar Equipe B',
-                value: _teamB,
-                teams: teams,
-                onChanged: (Team? value) => setState(() => _teamB = value),
               ),
-              if (_teamB != null) ...<Widget>[
-                const SizedBox(height: 8),
-                _JerseyColorPicker(
-                  keyName: 'team-b-color',
-                  label: 'Cor da camiseta — Equipe B',
-                  selected: _teamBColor,
-                  onChanged: (JerseyColor c) =>
-                      setState(() => _teamBColor = c),
+              const SizedBox(height: 12),
+              _TeamCard(
+                title: 'Equipe B',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _TeamDropdown(
+                      key: const Key('team-b-dropdown'),
+                      label: 'Selecionar Equipe B',
+                      value: _teamB,
+                      teams: teams,
+                      onChanged: (Team? value) =>
+                          setState(() => _teamB = value),
+                    ),
+                    if (_teamB != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _JerseyColorPicker(
+                        keyName: 'team-b-color',
+                        label: 'Cor da camiseta',
+                        selected: _teamBColor,
+                        onChanged: (JerseyColor c) =>
+                            setState(() => _teamBColor = c),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
               const SizedBox(height: 16),
               _PointLimitDropdown(
                 value: _pointLimit,
@@ -247,6 +269,49 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   }
 }
 
+class _TeamCard extends StatelessWidget {
+  const _TeamCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 6,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: CbbcColors.blue,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: CbbcColors.blueDeep,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TeamDropdown extends StatelessWidget {
   const _TeamDropdown({
     super.key,
@@ -266,10 +331,7 @@ class _TeamDropdown extends StatelessWidget {
     return DropdownButtonFormField<Team>(
       value: value,
       isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
+      decoration: InputDecoration(labelText: label),
       items: teams
           .map(
             (Team t) => DropdownMenuItem<Team>(
@@ -303,7 +365,6 @@ class _PointLimitDropdown extends StatelessWidget {
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: 'Pontuação máxima por equipe',
-        border: OutlineInputBorder(),
       ),
       items: kAcceptedPointLimits
           .map(
@@ -538,21 +599,29 @@ class _BonusSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
       decoration: BoxDecoration(
-        color: CbbcColors.blueSoft,
-        border: Border.all(color: CbbcColors.blueDeep.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(10),
+        color: CbbcColors.blueSoft.withValues(alpha: 0.55),
+        border: Border.all(color: CbbcColors.blue.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'A competição fornece bonificação para atletas?',
-            style: text.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: CbbcColors.blueDeep,
-            ),
+          Row(
+            children: <Widget>[
+              const Icon(Icons.star, color: CbbcColors.orange, size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Bonificações da competição',
+                  style: text.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: CbbcColors.blueDeep,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -560,28 +629,28 @@ class _BonusSection extends StatelessWidget {
             'pode chegar até 15.0 pontos sem alerta.',
             style: text.bodySmall?.copyWith(color: CbbcColors.textSecondary),
           ),
-          const SizedBox(height: 8),
-          _BonusCheckbox(
+          const SizedBox(height: 4),
+          _BonusSwitch(
             keyName: 'bonus-u16-checkbox',
             title: 'Sub-16',
             hint:
-                '(para ter a bonificação, o atleta não pode completar 17 anos durante a competição)',
+                'Para ter bonificação, o atleta não pode completar 17 anos durante a competição.',
             value: rules.youthU16,
             onChanged: (bool v) => onChanged(rules.copyWith(youthU16: v)),
           ),
-          _BonusCheckbox(
+          _BonusSwitch(
             keyName: 'bonus-u23-checkbox',
             title: 'Sub-23',
             hint:
-                '(para ter a bonificação, o atleta não pode completar 24 anos durante a competição)',
+                'Para ter bonificação, o atleta não pode completar 24 anos durante a competição.',
             value: rules.youthU23,
             onChanged: (bool v) => onChanged(rules.copyWith(youthU23: v)),
           ),
-          _BonusCheckbox(
+          _BonusSwitch(
             keyName: 'bonus-female-checkbox',
             title: 'Atleta feminina',
             hint:
-                '(selecione essa opção caso a competição seja masculina e tenha bonificação para atletas femininas)',
+                'Selecione caso a competição seja masculina e tenha bonificação para atletas femininas.',
             value: rules.female,
             onChanged: (bool v) => onChanged(rules.copyWith(female: v)),
           ),
@@ -591,8 +660,8 @@ class _BonusSection extends StatelessWidget {
   }
 }
 
-class _BonusCheckbox extends StatelessWidget {
-  const _BonusCheckbox({
+class _BonusSwitch extends StatelessWidget {
+  const _BonusSwitch({
     required this.keyName,
     required this.title,
     required this.hint,
@@ -608,47 +677,26 @@ class _BonusCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return SwitchListTile(
       key: Key(keyName),
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: Checkbox(
-                  value: value,
-                  onChanged: (bool? v) => onChanged(v ?? false),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    hint,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: CbbcColors.textSecondary,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      value: value,
+      onChanged: onChanged,
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: CbbcColors.blueDeep,
+        ),
+      ),
+      subtitle: Text(
+        hint,
+        style: const TextStyle(
+          fontSize: 12,
+          color: CbbcColors.textSecondary,
+          height: 1.25,
         ),
       ),
     );
