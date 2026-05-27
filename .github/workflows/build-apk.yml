@@ -57,10 +57,20 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Rename APK with version
+        id: rename
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//; s/+.*//')
+          APK_DIR=build/app/outputs/flutter-apk
+          APK_NAME="controle-classificacao-cbbc-v${VERSION}.apk"
+          cp "${APK_DIR}/app-release.apk" "${APK_DIR}/${APK_NAME}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: controle-classificacao-cbbc-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: controle-classificacao-cbbc-v${{ steps.rename.outputs.version }}
+          path: build/app/outputs/flutter-apk/${{ steps.rename.outputs.apk_name }}
           if-no-files-found: error
           retention-days: 30

@@ -8,7 +8,6 @@ import '../models/player.dart';
 import '../models/team.dart';
 import '../services/cache_service.dart';
 import '../services/vibration_service.dart';
-import '../services/wakelock_controller.dart';
 import '../theme/cbbc_theme.dart';
 import '../widgets/cbbc_logo_header.dart';
 import '../widgets/player_jersey_icon.dart';
@@ -20,15 +19,12 @@ class LineupControlScreen extends StatefulWidget {
     required this.initialState,
     CacheService? cache,
     VibrationService? vibration,
-    WakelockController? wakelock,
   })  : _cache = cache,
-        _vibration = vibration,
-        _wakelock = wakelock;
+        _vibration = vibration;
 
   final MatchState initialState;
   final CacheService? _cache;
   final VibrationService? _vibration;
-  final WakelockController? _wakelock;
 
   @override
   State<LineupControlScreen> createState() => _LineupControlScreenState();
@@ -40,7 +36,6 @@ class _LineupControlScreenState extends State<LineupControlScreen> {
   late MatchState _state;
   late final CacheService _cache;
   late final VibrationService _vibration;
-  late final WakelockController _wakelock;
 
   bool _wasOverA = false;
   bool _wasOverB = false;
@@ -51,17 +46,9 @@ class _LineupControlScreenState extends State<LineupControlScreen> {
     _state = widget.initialState;
     _cache = widget._cache ?? CacheService();
     _vibration = widget._vibration ?? const VibrationService();
-    _wakelock = widget._wakelock ?? const WakelockController();
     _wasOverA = _state.isTeamAOverLimit;
     _wasOverB = _state.isTeamBOverLimit;
-    unawaited(_wakelock.enable());
     unawaited(_persist());
-  }
-
-  @override
-  void dispose() {
-    unawaited(_wakelock.disable());
-    super.dispose();
   }
 
   Future<void> _persist() => _cache.saveMatchState(_state);

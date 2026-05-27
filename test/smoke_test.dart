@@ -16,12 +16,27 @@ void main() {
 
   testWidgets('home renderiza com logo CBBC e botão de carregar arquivo',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const CbbcApp());
+    // Splash com duração zero — o teste valida a home, não o splash.
+    await tester.pumpWidget(const CbbcApp(splashDuration: Duration.zero));
     await tester.pump();
 
     expect(find.byKey(const Key('cbbc-brand-logo')), findsOneWidget);
     expect(find.byKey(const Key('load-spreadsheet-button')), findsOneWidget);
     expect(find.text('Carregar planilha (.xlsx) ou PDF'), findsOneWidget);
+  });
+
+  testWidgets('splash mostra logo CBBC sobre fundo branco',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const CbbcApp(
+      splashDuration: Duration(seconds: 10),
+    ));
+    await tester.pump();
+
+    final Finder splash = find.byKey(const Key('splash-content'));
+    expect(splash, findsOneWidget);
+    final Scaffold scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    expect(scaffold.backgroundColor, Colors.white);
+    expect(find.textContaining('CONFEDERAÇÃO BRASILEIRA'), findsOneWidget);
   });
 
   group('BonusRules', () {

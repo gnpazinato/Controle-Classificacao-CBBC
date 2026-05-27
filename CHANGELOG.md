@@ -24,6 +24,24 @@ internet."
 
 ---
 
+## 0.4.0 — 2026-05-27
+
+- **Splash screen institucional.** Logo CBBC + texto
+  "Confederação Brasileira de Basquetebol em Cadeira de Rodas"
+  sobre fundo branco por ~2,5 s, com transição em fade para a tela
+  inicial.
+- **Fullscreen "modo vídeo".** App sobe em `SystemUiMode.immersiveSticky`:
+  barras de status e navegação ficam ocultas (swipe da borda traz
+  temporariamente) — mais área útil para a quadra.
+- **Tela sempre acesa.** Wakelock global ativado no `main()` (antes só
+  ficava ligado na tela de quadra). A tela não apaga em nenhuma etapa
+  do uso do app. O wakelock libera sozinho quando o app vai pra
+  background e re-ativa no resume.
+- **APK com versão no nome.** Workflow do GitHub Actions agora gera
+  `controle-classificacao-cbbc-v0.4.0.apk` (lê o número do
+  `pubspec.yaml`). `versionCode`/`versionName` do `build.gradle` passam
+  a vir de `pubspec.yaml` automaticamente.
+
 ## 0.3.0 — 2026-05-26
 
 - **Refresh visual estilo SaaS premium.** Paleta institucional CBBC
